@@ -325,9 +325,9 @@ def send_alert():
             'image': image,
             'role': user_role,
             'barangay': data.get('barangay', 'N/A'),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat()  # Use datetime.now() directly
         }
-        alerts.append(alert)  # Use the imported deque
+        alerts.append(alert)
         socketio.emit('new_alert', alert)
         return jsonify({'status': 'success', 'message': 'Alert sent'}), 200
     except Exception as e:
