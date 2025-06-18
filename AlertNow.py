@@ -9,7 +9,8 @@ import joblib
 import cv2
 import numpy as np
 from collections import Counter
-import datetime
+from datetime import datetime
+from alert_data import alerts
 # Assuming these files are in the same directory as app.py
 from BarangayDashboard import get_barangay_stats, get_latest_alert
 from CDRRMODashboard import get_cdrmo_stats
@@ -324,9 +325,9 @@ def send_alert():
             'image': image,
             'role': user_role,
             'barangay': data.get('barangay', 'N/A'),
-            'timestamp': request.timestamp or str(datetime.datetime.now())
+            'timestamp': datetime.now().isoformat()
         }
-        alerts.append(alert)
+        alerts.append(alert)  # Use the imported deque
         socketio.emit('new_alert', alert)
         return jsonify({'status': 'success', 'message': 'Alert sent'}), 200
     except Exception as e:
