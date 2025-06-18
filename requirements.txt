@@ -1,0 +1,7 @@
+Flask==2.0.1
+Flask-SocketIO==5.1.0
+sqlite3
+joblib
+opencv-python
+numpy
+scikit-learn

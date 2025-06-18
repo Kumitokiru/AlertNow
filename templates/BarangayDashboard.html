@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barangay Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha512-Zcn6bjR/8dTUseNhaL9ctSzyVPTAwSlg9/Gb+2dkk1rFRlDLc//YxV2g0OS7DH6QuZehGosRuEXk+GCCMQLEAMQ==" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha512-BwHfrr4c9kmPkLvB2q+1nRg6/8Lw1DlFE8wTHT4QdElU0OmsuFSESLATpF+0XUOKtw1XhjdMcQPU+noFZQBkCTQ==" crossorigin=""></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('barangay_dashboard') }}"><span>🏠</span> Dashboard</a></li>
+                <li><a href="#alerts"><span>🔔</span> Alerts</a></li>
+                <li><a href="#map"><span>📍</span> Map</a></li>
+                <li><a href="#incidents"><span>📋</span> Incidents</a></li>
+                <li><a href="#images"><span>🖼️</span> Images</a></li>
+                <li><a href="#analytics"><span>📊</span> Analytics</a></li>
+                <li><a href="#notifications"><span>📣</span> Notifications</a></li>
+                <li><a href="#settings"><span>⚙️</span> Settings</a></li>
+                <li><a href="{{ url_for('logout') }}"><span>🚪</span> Log Out</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="dashboard">
+        <header>
+            <h1>Barangay {{ barangay }} Dashboard</h1>
+            <div class="filters">
+                <select id="time-filter">
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                </select>
+                <select id="accident-type">
+                    <option value="all">All Types</option>
+                    <option value="fire">Fire</option>
+                    <option value="flood">Flood</option>
+                    <option value="road_accident">Road Accident</option>
+                </select>
+            </div>
+        </header>
+        <main>
+            <section class="map-section">
+                <h2>Live Image Map Location</h2>
+                <p>Coordinates: {{ lat_coord }}, {{ lon_coord }} (Barangay: {{ barangay }})</p>
+                <div id="map" style="height: 400px; width: 100%; border: 1px solid #ccc;"></div>
+            </section>
+            <section class="stats">
+                <p>Total Incidents: <span id="total-incidents">{{ stats.total() if stats else 0 }}</span></p>
+                <p>Critical Incidents: <span id="critical-incidents">0</span></p>
+            </section>
+            <section class="alerts" id="alerts">
+                <h2>Live Alerts</h2>
+                <div id="alert-container"></div>
+            </section>
+            <section class="charts" id="analytics">
+                <h2>Incident Trends</h2>
+                <canvas id="trendChart" width="400" height="200"></canvas>
+                <h2>Accident Distribution</h2>
+                <canvas id="distChart" width="400" height="200"></canvas>
+            </section>
+            <section class="images" id="images">
+                <h2>Accident Images</h2>
+                <div id="image-gallery"></div>
+            </section>
+        </main>
+        <audio id="alertSound" src="{{ url_for('static', filename='audio/Alert.mp3') }}" preload="auto"></audio>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const lat = {{ lat_coord|safe }};
+            const lon = {{ lon_coord|safe }};
+            const barangayName = {{ barangay|tojson|safe }};
+            console.log('Initializing Barangay map with coords:', { lat, lon, barangay: barangayName });
+            if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+                console.error('Invalid coordinates, using defaults');
+                lat = 14.5995;
+                lon = 120.9842;
+            }
+            const map = L.map('map').setView([lat, lon], 13);
+            L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key={{ google_api_key|safe }}', {
+                maxZoom: 20,
+                subdomains: ['0', '1', '2', '3'],
+                attribution: 'Map data © <a href="https://www.google.com/maps">Google</a>'
+            }).addTo(map);
+            L.marker([lat, lon]).addTo(map).bindPopup("{{ barangay|safe }} Location").openPopup();
+            window.barangayMap = map;
+        } catch (error) {
+            console.error('Map initialization failed:', error);
+        }
+    });
+
+    const socket = io('http://192.168.1.100:5000');
+    socket.on('new_alert', (data) => {
+        const feed = document.getElementById('alert-container');
+        const alertDiv = document.createElement('div');
+        alertDiv.innerHTML = `
+            <p><strong>${data.barangay}</strong> - ${data.emergency_type} at ${new Date().toLocaleTimeString()}</p>
+            ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100"/>` : ''}
+            <button onclick="respondAlert()">Respond</button>
+        `;
+        feed.prepend(alertDiv);
+        if (data.lat && data.lon && window.barangayMap) {
+            L.marker([data.lat, data.lon]).addTo(window.barangayMap).bindPopup(
+                data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
+            );
+        }
+        document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
+        updateCharts();
+    });
+
+    function respondAlert() {
+        socket.emit('responded', {});
+        alert('Response sent.');
+    }
+
+    function updateCharts() {
+        fetch('/api/distribution?role=barangay')
+            .then(res => res.json())
+            .then(dist => {
+                const ctxDist = document.getElementById('distChart').getContext('2d');
+                if (window.distChart) window.distChart.destroy();
+                window.distChart = new Chart(ctxDist, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(dist),
+                        datasets: [{ data: Object.values(dist), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'] }]
+                    }
+                });
+            });
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        if (window.trendChart) window.trendChart.destroy();
+        window.trendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['Jun 10', 'Jun 11', 'Jun 12'],
+                datasets: [{ label: 'Incidents', data: [5, 8, 3], borderColor: '#36A2EB', fill: false }]
+            }
+        });
+    }
+
+    updateCharts();
+    </script>
+</body>
+</html>
