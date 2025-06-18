@@ -9,7 +9,7 @@ import joblib
 import cv2
 import numpy as np
 from collections import Counter
-
+import datetime
 # Assuming these files are in the same directory as app.py
 from BarangayDashboard import get_barangay_stats, get_latest_alert
 from CDRRMODashboard import get_cdrmo_stats
@@ -306,30 +306,32 @@ alerts = load_coords()
 
 @app.route('/send_alert', methods=['POST'])
 def send_alert():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
-    # Extract alert details
-    lat = data.get('lat')
-    lon = data.get('lon')
-    emergency_type = data.get('emergency_type', 'General')
-    image = data.get('image')
-    user_role = data.get('user_role', 'unknown')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
 
-    # Create alert object
-    alert = {
-        'lat': lat,
-        'lon': lon,
-        'emergency_type': emergency_type,
-        'image': image,
-        'role': user_role,
-        'barangay': data.get('barangay', 'N/A'),
-        'timestamp': request.timestamp  # Use Flask's request timestamp or current time
-    }
-    alerts.append(alert)
-    socketio.emit('new_alert', alert)
-    return jsonify({'status': 'success', 'message': 'Alert sent'}), 200
+        lat = data.get('lat')
+        lon = data.get('lon')
+        emergency_type = data.get('emergency_type', 'General')
+        image = data.get('image')
+        user_role = data.get('user_role', 'unknown')
+
+        alert = {
+            'lat': lat,
+            'lon': lon,
+            'emergency_type': emergency_type,
+            'image': image,
+            'role': user_role,
+            'barangay': data.get('barangay', 'N/A'),
+            'timestamp': request.timestamp or str(datetime.datetime.now())
+        }
+        alerts.append(alert)
+        socketio.emit('new_alert', alert)
+        return jsonify({'status': 'success', 'message': 'Alert sent'}), 200
+    except Exception as e:
+        app.logger.error(f"Error processing send_alert: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/add_alert', methods=['POST'])
