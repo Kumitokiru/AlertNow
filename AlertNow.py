@@ -304,6 +304,34 @@ def load_coords():
 
 alerts = load_coords()
 
+@app.route('/send_alert', methods=['POST'])
+def send_alert():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    # Extract alert details
+    lat = data.get('lat')
+    lon = data.get('lon')
+    emergency_type = data.get('emergency_type', 'General')
+    image = data.get('image')
+    user_role = data.get('user_role', 'unknown')
+
+    # Create alert object
+    alert = {
+        'lat': lat,
+        'lon': lon,
+        'emergency_type': emergency_type,
+        'image': image,
+        'role': user_role,
+        'barangay': data.get('barangay', 'N/A'),
+        'timestamp': request.timestamp  # Use Flask's request timestamp or current time
+    }
+    alerts.append(alert)
+    socketio.emit('new_alert', alert)
+    return jsonify({'status': 'success', 'message': 'Alert sent'}), 200
+
+
 @app.route('/add_alert', methods=['POST'])
 def add_alert():
     data = request.form
