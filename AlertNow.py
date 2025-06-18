@@ -164,7 +164,7 @@ def login():
                 return "Unauthorized role for this login page", 403
         app.logger.warning(f"Web login failed for username: {username}")
         return "Invalid credentials", 401
-    return render_template('LoginPage.html')
+    return render_template('LogInPage.html')
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
