@@ -338,9 +338,7 @@ def send_alert():
         app.logger.error(f"Error processing send_alert: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/barangay_dashboard')
-def barangay_dashboard():
-    return render_template('BarangayDashboard.html')
+
 
 # New /api/stats endpoint
 @app.route('/api/stats')
