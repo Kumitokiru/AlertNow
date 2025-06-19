@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
 from flask_socketio import SocketIO
 import logging
 import ast
@@ -76,18 +76,44 @@ except Exception as e:
 
 def get_db_connection():
     """Establishes a connection to the SQLite database."""
-    conn = sqlite3.connect('users.db')
+    db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
+    # For Render with persistent disk, use: db_path = '/data/users_web.db'
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row  # Allows accessing columns by name
     return conn
 
-def construct_username(role, municipality=None, barangay=None, contact_no=None):
-    """Constructs a unique username based on the role and relevant details."""
+@app.route('/download_db', methods=['GET'])
+def download_db():
+       """Endpoint to download users_web.db (restricted to admin for security)."""
+       # Add authentication logic here (e.g., check session or API key)
+       if session.get('role') != 'admin':  # Example: Restrict to admin role
+           app.logger.warning("Unauthorized attempt to download users_web.db")
+           return "Unauthorized", 403
+
+       db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
+       if not os.path.exists(db_path):
+           app.logger.error("users_web.db not found at %s", db_path)
+           return "Database file not found", 404
+
+       # For Render persistent disk
+       if not os.path.exists(db_path):
+           db_path = '/data/users_web.db'
+           if not os.path.exists(db_path):
+               app.logger.error("users_web.db not found at /data/users_web.db")
+               return "Database file not found", 404
+
+       app.logger.debug("Serving users_web.db for download")
+       return send_file(db_path, as_attachment=True, download_name='users_web.db')
+
+
+def construct_unique_id(role, barangay=None, contact_no=None, assigned_municipality=None):
+    """Constructs a unique identifier based on role and relevant details."""
     if role == 'barangay':
         return f"{barangay}_{contact_no}"
     else:  # cdrrmo or pnp
-        return f"{role}_{municipality}_{contact_no}"
+        return f"{role}_{assigned_municipality}_{contact_no}"
 
-# --- Routes remain unchanged ---
+# --- Routes ---
 @app.route('/')
 def home():
     app.logger.debug("Rendering SignUpType.html")
@@ -98,26 +124,26 @@ def signup_barangay():
     app.logger.debug("Accessing /signup_barangay with method: %s", request.method)
     if request.method == 'POST':
         barangay = request.form['barangay']
-        municipality = request.form['municipality']
+        assigned_municipality = request.form['municipality']
         province = request.form['province']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        username = construct_username('barangay', barangay=barangay, contact_no=contact_no)
+        unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
         
         conn = get_db_connection()
         try:
             conn.execute('''
-                INSERT INTO users (username, password, role, barangay, municipality, province, contact_no)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (username, password, 'barangay', barangay, municipality, province, contact_no))
+                INSERT INTO users (barangay, role, contact_no, assigned_municipality, province, password)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (barangay, 'barangay', contact_no, assigned_municipality, province, password))
             conn.commit()
-            app.logger.debug("Web user signed up: %s", username)
+            app.logger.debug("Web user signed up: %s", unique_id)
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            app.logger.error("Web signup failed: Username %s already exists", username)
-            return "Username already exists", 400
+            app.logger.error("Web signup failed: Unique ID %s already exists", unique_id)
+            return "User already exists", 400
         except Exception as e:
-            app.logger.error(f"Web signup failed for {username}: {e}", exc_info=True)
+            app.logger.error(f"Web signup failed for {unique_id}: {e}", exc_info=True)
             return f"Signup failed: {e}", 500
         finally:
             conn.close()
@@ -127,37 +153,28 @@ def signup_barangay():
 def signup_resident():
     app.logger.debug("Accessing /signup_resident with method: POST (API)")
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    role = data.get('role', 'resident')
     barangay = data.get('barangay')
-    municipality = data.get('municipality')
-    province = data.get('province')
+    role = data.get('role', 'resident')
     contact_no = data.get('contact_no')
-    first_name = data.get('first_name')
-    middle_name = data.get('middle_name')
-    last_name = data.get('last_name')
-    age = data.get('age')
-    house_no = data.get('house_no')
-    street_no = data.get('street_no')
-    position = data.get('position') if role == 'official' else None
+    assigned_municipality = data.get('assigned_municipality')
+    province = data.get('province')
+    password = data.get('password')
+    unique_id = construct_unique_id(role, barangay=barangay, contact_no=contact_no, assigned_municipality=assigned_municipality)
 
     conn = get_db_connection()
     try:
         conn.execute('''
-            INSERT INTO users (username, password, role, barangay, municipality, province, contact_no,
-                              first_name, middle_name, last_name, age, house_no, street_no, position)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (username, password, role, barangay, municipality, province, contact_no,
-              first_name, middle_name, last_name, age, house_no, street_no, position))
+            INSERT INTO users (barangay, role, contact_no, assigned_municipality, province, password)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (barangay, role, contact_no, assigned_municipality, province, password))
         conn.commit()
-        app.logger.debug("Resident/Official signed up via API: %s", username)
+        app.logger.debug("Resident/Official signed up via API: %s", unique_id)
         return jsonify({'status': 'success'})
     except sqlite3.IntegrityError:
-        app.logger.error("API signup failed: Username %s already exists", username)
-        return jsonify({'error': 'Username already exists'}), 400
+        app.logger.error("API signup failed: Unique ID %s already exists", unique_id)
+        return jsonify({'error': 'User already exists'}), 400
     except Exception as e:
-        app.logger.error(f"API signup failed for {username}: {e}", exc_info=True)
+        app.logger.error(f"API signup failed for {unique_id}: {e}", exc_info=True)
         return jsonify({'error': f'Signup failed: {e}'}), 500
     finally:
         conn.close()
@@ -169,39 +186,45 @@ def login():
         barangay = request.form['barangay']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        username = construct_username('barangay', barangay=barangay, contact_no=contact_no)
+        unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
         
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password)).fetchone()
+        user = conn.execute('''
+            SELECT * FROM users WHERE barangay = ? AND contact_no = ? AND password = ?
+        ''', (barangay, contact_no, password)).fetchone()
         conn.close()
         
         if user:
-            session['username'] = username
+            session['unique_id'] = unique_id
             session['role'] = user['role']
             if user['role'] == 'barangay':
-                app.logger.debug(f"Web login successful for barangay: {username}")
+                app.logger.debug(f"Web login successful for barangay: {unique_id}")
                 return redirect(url_for('barangay_dashboard'))
             else:
-                app.logger.warning(f"Web login for /login attempted by non-barangay role: {username} ({user['role']})")
+                app.logger.warning(f"Web login for /login attempted by non-barangay role: {unique_id} ({user['role']})")
                 return "Unauthorized role for this login page", 403
-        app.logger.warning(f"Web login failed for username: {username}")
+        app.logger.warning(f"Web login failed for unique_id: {unique_id}")
         return "Invalid credentials", 401
     return render_template('LogInPage.html')
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
-    username = data.get('username')
+    barangay = data.get('barangay')
+    contact_no = data.get('contact_no')
     password = data.get('password')
+    unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
     
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password)).fetchone()
+    user = conn.execute('''
+        SELECT * FROM users WHERE barangay = ? AND contact_no = ? AND password = ?
+    ''', (barangay, contact_no, password)).fetchone()
     conn.close()
     
     if user:
-        app.logger.debug(f"API login successful for user: {username} with role: {user['role']}")
+        app.logger.debug(f"API login successful for user: {unique_id} with role: {user['role']}")
         return jsonify({'status': 'success', 'role': user['role']})
-    app.logger.warning(f"API login failed for username: {username}")
+    app.logger.warning(f"API login failed for unique_id: {unique_id}")
     return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/signup_cdrrmo_pnp', methods=['GET', 'POST'])
@@ -209,25 +232,25 @@ def signup_cdrrmo_pnp():
     app.logger.debug("Accessing /signup_cdrrmo_pnp with method: %s", request.method)
     if request.method == 'POST':
         role = request.form['role'].lower()
-        municipality = request.form['municipality']
+        assigned_municipality = request.form['municipality']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        username = construct_username(role, municipality=municipality, contact_no=contact_no)
+        unique_id = construct_unique_id(role, assigned_municipality=assigned_municipality, contact_no=contact_no)
         
         conn = get_db_connection()
         try:
             conn.execute('''
-                INSERT INTO users (username, password, role, municipality, contact_no)
+                INSERT INTO users (role, contact_no, assigned_municipality, province, password)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (username, password, role, municipality, contact_no))
+            ''', (role, contact_no, assigned_municipality, password))
             conn.commit()
-            app.logger.debug("Web user signed up: %s", username)
+            app.logger.debug("Web user signed up: %s", unique_id)
             return redirect(url_for('login_cdrrmo_pnp'))
         except sqlite3.IntegrityError:
-            app.logger.error("Web signup failed: Username %s already exists", username)
-            return "Username already exists", 400
+            app.logger.error("Web signup failed: Unique ID %s already exists", unique_id)
+            return "User already exists", 400
         except Exception as e:
-            app.logger.error(f"Web signup failed for {username}: {e}", exc_info=True)
+            app.logger.error(f"Web signup failed for {unique_id}: {e}", exc_info=True)
             return f"Signup failed: {e}", 500
         finally:
             conn.close()
@@ -268,27 +291,31 @@ def signup_na():
 def login_cdrrmo_pnp():
     app.logger.debug("Accessing /login_cdrrmo_pnp with method: %s", request.method)
     if request.method == 'POST':
-        municipality = request.form['municipality']
+        assigned_municipality = request.form['municipality']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        username_cdrrmo = construct_username('cdrrmo', municipality=municipality, contact_no=contact_no)
-        username_pnp = construct_username('pnp', municipality=municipality, contact_no=contact_no)
+        unique_id_cdrrmo = construct_unique_id('cdrrmo', assigned_municipality=assigned_municipality, contact_no=contact_no)
+        unique_id_pnp = construct_unique_id('pnp', assigned_municipality=assigned_municipality, contact_no=contact_no)
         
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username_cdrrmo, password)).fetchone()
+        user = conn.execute('''
+            SELECT * FROM users WHERE role = ? AND contact_no = ? AND password = ? AND assigned_municipality = ?
+        ''', ('cdrrmo', contact_no, password, assigned_municipality)).fetchone()
         if not user:
-            user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username_pnp, password)).fetchone()
+            user = conn.execute('''
+                SELECT * FROM users WHERE role = ? AND contact_no = ? AND password = ? AND assigned_municipality = ?
+            ''', ('pnp', contact_no, password, assigned_municipality)).fetchone()
         conn.close()
         
         if user:
-            session['username'] = user['username']
+            session['unique_id'] = construct_unique_id(user['role'], assigned_municipality=assigned_municipality, contact_no=contact_no)
             session['role'] = user['role']
-            app.logger.debug(f"Web login successful for user: {user['username']} ({user['role']})")
+            app.logger.debug(f"Web login successful for user: {session['unique_id']} ({user['role']})")
             if user['role'] == 'cdrrmo':
                 return redirect(url_for('cdrrmo_dashboard'))
             elif user['role'] == 'pnp':
                 return redirect(url_for('pnp_dashboard'))
-        app.logger.warning(f"Web login failed for municipality: {municipality}, contact: {contact_no}")
+        app.logger.warning(f"Web login failed for assigned_municipality: {assigned_municipality}, contact: {contact_no}")
         return "Invalid credentials", 401
     return render_template('CDRRMOPNPIn.html')
 
@@ -323,8 +350,6 @@ def load_coords():
     except Exception as e:
         print(f"Error loading coords.txt: {e}")
     return alerts
-
-
 
 alerts = deque(maxlen=100)
 
@@ -366,8 +391,6 @@ def send_alert():
         app.logger.error(f"Error processing send_alert: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
 
-
-
 # New /api/stats endpoint
 @app.route('/api/stats')
 def get_stats():
@@ -382,9 +405,9 @@ def get_distribution():
     if role == 'barangay':
         filtered_alerts = [a for a in alerts if a.get('role') == 'barangay' or a.get('barangay')]
     elif role == 'cdrrmo':
-        filtered_alerts = [a for a in alerts if a.get('role') == 'cdrrmo' or a.get('municipality')]
+        filtered_alerts = [a for a in alerts if a.get('role') == 'cdrrmo' or a.get('assigned_municipality')]
     elif role == 'pnp':
-        filtered_alerts = [a for a in alerts if a.get('role') == 'pnp' or a.get('municipality')]
+        filtered_alerts = [a for a in alerts if a.get('role') == 'pnp' or a.get('assigned_municipality')]
     else:
         filtered_alerts = alerts
     types = [a.get('emergency_type', 'unknown') for a in filtered_alerts]
@@ -435,34 +458,34 @@ def predict_image():
         app.logger.error(f"Image prediction failed: {e}", exc_info=True)
         return jsonify({'error': 'Prediction failed'}), 500
 
-
-
 @app.route('/barangay_dashboard')
 def barangay_dashboard():
-    username = session.get('username')
+    unique_id = session.get('unique_id')
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    user = conn.execute('''
+        SELECT * FROM users WHERE barangay = ? AND contact_no = ?
+    ''', (unique_id.split('_')[0], unique_id.split('_')[1])).fetchone()
     conn.close()
     
-    if not username or not user or user['role'] != 'barangay':
+    if not unique_id or not user or user['role'] != 'barangay':
         app.logger.warning("Unauthorized access to barangay_dashboard. Session: %s, User: %s", session, user)
         return redirect(url_for('login'))
     
     barangay = user['barangay']
-    municipality = user['municipality'] or 'San Pablo City'
+    assigned_municipality = user['assigned_municipality'] or 'San Pablo City'
     latest_alert = get_latest_alert()
     stats = get_barangay_stats()
-    coords = barangay_coords.get(municipality, {}).get(barangay, {'lat': 14.5995, 'lon': 120.9842})
+    coords = barangay_coords.get(assigned_municipality, {}).get(barangay, {'lat': 14.5995, 'lon': 120.9842})
     
     try:
         lat_coord = float(coords.get('lat', 14.5995))
         lon_coord = float(coords.get('lon', 120.9842))
     except (ValueError, TypeError):
-        app.logger.error(f"Invalid coordinates for {barangay} in {municipality}, using defaults")
+        app.logger.error(f"Invalid coordinates for {barangay} in {assigned_municipality}, using defaults")
         lat_coord = 14.5995
         lon_coord = 120.9842
 
-    app.logger.debug(f"Rendering BarangayDashboard for {barangay} in {municipality} with coords: lat={lat_coord}, lon={lon_coord}")
+    app.logger.debug(f"Rendering BarangayDashboard for {barangay} in {assigned_municipality} with coords: lat={lat_coord}, lon={lon_coord}")
     return render_template('BarangayDashboard.html', 
                            latest_alert=latest_alert, 
                            stats=stats, 
@@ -473,99 +496,96 @@ def barangay_dashboard():
 
 @app.route('/cdrrmo_dashboard')
 def cdrrmo_dashboard():
-    username = session.get('username')
+    unique_id = session.get('unique_id')
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    user = conn.execute('''
+        SELECT * FROM users WHERE role = ? AND contact_no = ? AND assigned_municipality = ?
+    ''', ('cdrrmo', unique_id.split('_')[2], unique_id.split('_')[1])).fetchone()
     conn.close()
     
-    if not username or not user or user['role'] != 'cdrrmo':
+    if not unique_id or not user or user['role'] != 'cdrrmo':
         app.logger.warning("Unauthorized access to cdrrmo_dashboard. Session: %s, User: %s", session, user)
         return redirect(url_for('login_cdrrmo_pnp'))
     
-    municipality = user['municipality']
-    if not municipality:
-        app.logger.error(f"No municipality assigned for user {username}")
-        municipality = "San Pablo City"  # Fallback municipality
+    assigned_municipality = user['assigned_municipality']
+    if not assigned_municipality:
+        app.logger.error(f"No municipality assigned for user {unique_id}")
+        assigned_municipality = "San Pablo City"  # Fallback municipality
     stats = get_cdrrmo_stats()
-    coords = municipality_coords.get(municipality, {'lat': 14.5995, 'lon': 120.9842})
+    coords = municipality_coords.get(assigned_municipality, {'lat': 14.5995, 'lon': 120.9842})
     
     try:
         lat_coord = float(coords.get('lat', 14.5995))
         lon_coord = float(coords.get('lon', 120.9842))
     except (ValueError, TypeError):
-        app.logger.error(f"Invalid coordinates for {municipality}, using defaults")
+        app.logger.error(f"Invalid coordinates for {assigned_municipality}, using defaults")
         lat_coord = 14.5995
         lon_coord = 120.9842
 
-    app.logger.debug(f"Rendering CDRRMODashboard for {municipality} with coords: lat={lat_coord}, lon={lon_coord}")
+    app.logger.debug(f"Rendering CDRRMODashboard for {assigned_municipality} with coords: lat={lat_coord}, lon={lon_coord}")
     return render_template('CDRRMODashboard.html', 
                            stats=stats, 
-                           municipality=municipality, 
+                           municipality=assigned_municipality, 
                            lat_coord=lat_coord, 
                            lon_coord=lon_coord, 
                            google_api_key=GOOGLE_API_KEY)
 
 @app.route('/pnp_dashboard')
 def pnp_dashboard():
-    username = session.get('username')
+    unique_id = session.get('unique_id')
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    user = conn.execute('''
+        SELECT * FROM users WHERE role = ? AND contact_no = ? AND assigned_municipality = ?
+    ''', ('pnp', unique_id.split('_')[2], unique_id.split('_')[1])).fetchone()
     conn.close()
     
-    if not username or not user or user['role'] != 'pnp':
+    if not unique_id or not user or user['role'] != 'pnp':
         app.logger.warning("Unauthorized access to pnp_dashboard. Session: %s, User: %s", session, user)
         return redirect(url_for('login_cdrrmo_pnp'))
     
-    municipality = user['municipality']
-    if not municipality:
-        app.logger.error(f"No municipality assigned for user {username}")
-        municipality = "San Pablo City"  # Fallback municipality
+    assigned_municipality = user['assigned_municipality']
+    if not assigned_municipality:
+        app.logger.error(f"No municipality assigned for user {unique_id}")
+        assigned_municipality = "San Pablo City"  # Fallback municipality
     stats = get_pnp_stats()
-    coords = municipality_coords.get(municipality, {'lat': 14.5995, 'lon': 120.9842})
+    coords = municipality_coords.get(assigned_municipality, {'lat': 14.5995, 'lon': 120.9842})
     
     try:
         lat_coord = float(coords.get('lat', 14.5995))
         lon_coord = float(coords.get('lon', 120.9842))
     except (ValueError, TypeError):
-        app.logger.error(f"Invalid coordinates for {municipality}, using defaults")
+        app.logger.error(f"Invalid coordinates for {assigned_municipality}, using defaults")
         lat_coord = 14.5995
         lon_coord = 120.9842
 
-    app.logger.debug(f"Rendering PNPDashboard for {municipality} with coords: lat={lat_coord}, lon={lon_coord}")
+    app.logger.debug(f"Rendering PNPDashboard for {assigned_municipality} with coords: lat={lat_coord}, lon={lon_coord}")
     return render_template('PNPDashboard.html', 
                            stats=stats, 
-                           municipality=municipality, 
+                           municipality=assigned_municipality, 
                            lat_coord=lat_coord, 
                            lon_coord=lon_coord, 
                            google_api_key=GOOGLE_API_KEY)
 
 if __name__ == '__main__':
-    try:
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                username TEXT PRIMARY KEY,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL,
-                barangay TEXT,
-                municipality TEXT,
-                province TEXT,
-                contact_no TEXT,
-                position TEXT,
-                first_name TEXT,
-                middle_name TEXT,
-                last_name TEXT,
-                age INTEGER,
-                house_no TEXT,
-                street_no TEXT
-            )
-        ''')
-        conn.commit()
-        conn.close()
-        logging.info("Database 'users.db' initialized successfully or already exists.")
-    except Exception as e:
-        logging.error(f"Failed to initialize database: {e}", exc_info=True)
+       try:
+           conn = sqlite3.connect('data/users_web.db')
+           c = conn.cursor()
+           c.execute('''
+               CREATE TABLE IF NOT EXISTS users (
+                   barangay TEXT,
+                   role TEXT NOT NULL,
+                   contact_no TEXT,
+                   assigned_municipality TEXT,
+                   province TEXT,
+                   password TEXT NOT NULL,
+                   PRIMARY KEY (barangay, contact_no)
+               )
+           ''')
+           conn.commit()
+           conn.close()
+           logging.info("Database 'users_web.db' initialized successfully or already exists.")
+       except Exception as e:
+           logging.error(f"Failed to initialize database: {e}", exc_info=True)
 
-    port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host="0.0.0.0", port=port, debug=True)
+       port = int(os.environ.get('PORT', 5000))
+       socketio.run(app, host="0.0.0.0", port=port, debug=True)
