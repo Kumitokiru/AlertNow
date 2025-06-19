@@ -11,6 +11,8 @@ import numpy as np
 from collections import Counter
 from datetime import datetime
 from alert_data import alerts
+from collections import deque
+
 # Assuming these files are in the same directory as app.py
 from BarangayDashboard import get_barangay_stats, get_latest_alert
 from CDRRMODashboard import get_cdrmo_stats
@@ -305,6 +307,8 @@ def load_coords():
 
 alerts = load_coords()
 
+alerts = deque(maxlen=100)
+
 @app.route('/send_alert', methods=['POST'])
 def send_alert():
     try:
@@ -325,7 +329,7 @@ def send_alert():
             'image': image,
             'role': user_role,
             'barangay': data.get('barangay', 'N/A'),
-            'timestamp': datetime.now().isoformat()  # Use datetime.now() directly
+            'timestamp': datetime.now().isoformat()
         }
         alerts.append(alert)
         socketio.emit('new_alert', alert)
@@ -334,6 +338,31 @@ def send_alert():
         app.logger.error(f"Error processing send_alert: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/barangay_dashboard')
+def barangay_dashboard():
+    return render_template('BarangayDashboard.html')
+
+# New /api/stats endpoint
+@app.route('/api/stats')
+def get_stats():
+    total = len(alerts)
+    critical = len([a for a in alerts if a.get('emergency_type', '').lower() == 'critical'])
+    return jsonify({'total': total, 'critical': critical})
+
+# Updated /api/distribution endpoint
+@app.route('/api/distribution')
+def get_distribution():
+    role = request.args.get('role', 'all')
+    if role == 'barangay':
+        filtered_alerts = [a for a in alerts if a.get('role') == 'barangay' or a.get('barangay')]
+    elif role == 'cdrmo':
+        filtered_alerts = [a for a in alerts if a.get('role') == 'cdrmo' or a.get('municipality')]
+    elif role == 'pnp':
+        filtered_alerts = [a for a in alerts if a.get('role') == 'pnp' or a.get('municipality')]
+    else:
+        filtered_alerts = alerts
+    types = [a.get('emergency_type', 'unknown') for a in filtered_alerts]
+    return jsonify(dict(Counter(types)))
 
 @app.route('/add_alert', methods=['POST'])
 def add_alert():
@@ -380,20 +409,7 @@ def predict_image():
         app.logger.error(f"Image prediction failed: {e}", exc_info=True)
         return jsonify({'error': 'Prediction failed'}), 500
 
-@app.route('/api/distribution')
-def get_distribution():
-    role = request.args.get('role', 'all')
-    if role == 'barangay':
-        stats = get_barangay_stats()
-    elif role == 'cdrmo':
-        stats = get_cdrmo_stats()
-    elif role == 'pnp':
-        stats = get_pnp_stats()
-    else:
-        stats = Counter([a.get('emergency_type', 'unknown') for a in alerts])
-    
-    app.logger.debug(f"Distribution for role '{role}': {dict(stats)}")
-    return jsonify(dict(stats))
+
 
 @app.route('/barangay_dashboard')
 def barangay_dashboard():
