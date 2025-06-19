@@ -46,6 +46,23 @@ municipality_coords = {
 # Load Google Maps API key from environment variable or use a default
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyBSXRZPDX1x1d91Ck-pskiwGA8Y2-5gDVs')
 
+@socketio.on('responded')
+def handle_responded(data):
+    timestamp = data.get('timestamp')
+    lat = data.get('lat')
+    lon = data.get('lon')
+    barangay = data.get('barangay')
+    emergency_type = data.get('emergency_type')
+    app.logger.debug(f"Received response for alert at {timestamp} - Lat: {lat}, Lon: {lon}, Barangay: {barangay}, Type: {emergency_type}")
+    # Add logic to update alert status or notify other clients if needed
+    socketio.emit('alert_responded', {
+        'timestamp': timestamp,
+        'lat': lat,
+        'lon': lon,
+        'barangay': barangay,
+        'emergency_type': emergency_type
+    })
+
 # Load ML model
 try:
     dt_classifier = joblib.load('decision_tree_model.pkl')
@@ -323,6 +340,14 @@ def send_alert():
         emergency_type = data.get('emergency_type', 'General')
         image = data.get('image')
         user_role = data.get('user_role', 'unknown')
+        image_upload_time = data.get('imageUploadTime', datetime.now().isoformat())
+
+        # Check image expiration
+        if image:
+            upload_time = datetime.fromisoformat(image_upload_time)
+            if (datetime.now() - upload_time).total_seconds() > 30 * 60:
+                image = None  # Expire image if older than 30 minutes
+                emergency_type = 'Not Specified'
 
         alert = {
             'lat': lat,
@@ -331,7 +356,8 @@ def send_alert():
             'image': image,
             'role': user_role,
             'barangay': data.get('barangay', 'N/A'),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'imageUploadTime': image_upload_time
         }
         alerts.append(alert)
         socketio.emit('new_alert', alert)
