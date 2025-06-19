@@ -70,46 +70,33 @@
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        try {
-            const lat = {{ lat_coord|safe }};
-            const lon = {{ lon_coord|safe }};
-            const barangayName = {{ barangay|tojson|safe }};
-            console.log('Initializing Barangay map with coords:', { lat, lon, barangay: barangayName });
-            if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
-                console.error('Invalid coordinates, using defaults');
-                lat = 14.5995;
-                lon = 120.9842;
-            }
-            const map = L.map('map').setView([lat, lon], 13);
-            L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key={{ google_api_key|safe }}', {
-                maxZoom: 20,
-                subdomains: ['0', '1', '2', '3'],
-                attribution: 'Map data © <a href="https://www.google.com/maps">Google</a>'
-            }).addTo(map);
-            L.marker([lat, lon]).addTo(map).bindPopup("{{ barangay|safe }} Location").openPopup();
-            window.barangayMap = map;
-        } catch (error) {
-            console.error('Map initialization failed:', error);
-        }
-    });
+        // Initialize Leaflet map
+        const barangayMap = L.map('map').setView([14.5995, 120.9842], 13); // Default to Manila
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(barangayMap);
+        window.barangayMap = barangayMap;
 
-    const socket = io('http://192.168.1.100:5000');
-    socket.on('new_alert', (data) => {
-        const feed = document.getElementById('alert-container');
-        const alertDiv = document.createElement('div');
-        alertDiv.innerHTML = `
-            <p><strong>${data.barangay}</strong> - ${data.emergency_type} at ${new Date().toLocaleTimeString()}</p>
-            ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100"/>` : ''}
-            <button onclick="respondAlert()">Respond</button>
-        `;
-        feed.prepend(alertDiv);
-        if (data.lat && data.lon && window.barangayMap) {
-            L.marker([data.lat, data.lon]).addTo(window.barangayMap).bindPopup(
-                data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
-            );
-        }
-        document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
-        updateCharts();
+        // Connect to SocketIO
+        const socket = io('https://alertnow.onrender.com');
+        socket.on('connect', () => console.log('Connected to SocketIO server'));
+        socket.on('new_alert', (data) => {
+            const feed = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.innerHTML = `
+                <p><strong>${data.barangay}</strong> - ${data.emergency_type} at ${new Date(data.timestamp).toLocaleTimeString()}</p>
+                ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100"/>` : ''}
+            `;
+            feed.prepend(alertDiv);
+
+            if (data.lat && data.lon) {
+                L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
+                    data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
+                );
+            }
+
+            document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
+        });
     });
 
     function respondAlert() {
