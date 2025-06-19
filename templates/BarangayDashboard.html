@@ -74,6 +74,7 @@
         </main>
         <div id="notification" class="notification"></div>
     </div>
+    <!-- [Existing HTML content remains unchanged until script section] -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Initialize Leaflet map with dynamic coordinates
@@ -85,7 +86,6 @@
         }).addTo(barangayMap);
         window.barangayMap = barangayMap;
 
-        // Connect to SocketIO
         const socket = io('https://alertnow.onrender.com');
         socket.on('connect', () => console.log('Connected to SocketIO server'));
         socket.on('new_alert', (data) => {
@@ -94,43 +94,28 @@
             notifyAlert(data);
         });
 
-        // Request notification permission on load
-        if ('Notification' in window) {
-            Notification.requestPermission().then(permission => {
-                console.log('Notification permission:', permission);
-                if (permission === 'granted') {
-                    console.log('Notification permission granted');
-                } else {
-                    console.warn('Notification permission denied');
-                }
-            });
-        }
-
-        // Centralized function to update all UI components
         function updateUIWithAlert(data) {
             const feed = document.getElementById('alert-container');
             if (feed) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert-item';
-                // Debug the raw timestamp
-                console.log('Raw timestamp from server:', data.timestamp);
-                // Convert timestamp to local time (PST)
+                const now = new Date();
+                const uploadTime = data.imageUploadTime ? new Date(data.imageUploadTime) : null;
+                const isImageValid = uploadTime && (now - uploadTime) <= 30 * 60 * 1000;
                 let displayTime;
                 try {
                     const serverTime = new Date(data.timestamp || Date.now());
                     displayTime = serverTime.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
-                    console.log('Converted local time:', displayTime);
                 } catch (e) {
                     console.error('Error parsing timestamp:', e);
                     displayTime = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
                 }
                 alertDiv.innerHTML = `
-                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${displayTime}</p>
-                    <button onclick="respondAlert('${data.timestamp}')">Respond</button>
+                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
+                    <button onclick="respondAlert('${data.timestamp}', ${data.lat || 0}, ${data.lon || 0}, '${data.barangay || 'N/A'}', '${data.emergency_type || 'Not Specified'}')">Respond</button>
+                    ${data.image && isImageValid ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
                 `;
                 feed.prepend(alertDiv);
-            } else {
-                console.error('alert-container not found');
             }
 
             if (data.lat && data.lon) {
@@ -144,27 +129,23 @@
             updateCharts();
         }
 
-        // Function to notify alert with notification only
         function notifyAlert(data) {
             if ('Notification' in window && Notification.permission === 'granted') {
                 showBrowserNotification(data);
             } else {
-                console.warn('Notification permission not granted.');
                 showNotification(`New alert (${data.emergency_type || 'Unknown'}) received!`);
             }
         }
 
-        // Browser notification
         function showBrowserNotification(data) {
             if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification('New Alert', {
+                new Notification('New Alert', {
                     body: `${data.emergency_type || 'Unknown'} at ${data.barangay || 'Unknown Barangay'}`,
-                    icon: '/static/favicon.ico' // Optional: Add a favicon or image
+                    icon: '/static/favicon.ico'
                 });
             }
         }
 
-        // Update Incident Trends and Accident Distribution
         function updateCharts() {
             fetch('/api/distribution?role=barangay')
                 .then(res => res.json())
@@ -193,7 +174,7 @@
                     labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
                     datasets: [{
                         label: 'Incidents',
-                        data: [5, 8, 3, 7, 4, 6, 2], // Replace with real data
+                        data: [5, 8, 3, 7, 4, 6, 2],
                         borderColor: '#36A2EB',
                         fill: false
                     }]
@@ -202,7 +183,6 @@
             });
         }
 
-        // Update Total Incidents and Critical Incidents
         function updateStats() {
             fetch('/api/stats')
                 .then(res => res.json())
@@ -213,23 +193,20 @@
                 .catch(err => console.error('Failed to fetch stats:', err));
         }
 
-        // Initial load
-        updateCharts();
-        updateStats();
-
-        // Respond to alert
-        window.respondAlert = function(timestamp) {
-            socket.emit('responded', { timestamp: timestamp });
+        window.respondAlert = function(timestamp, lat, lon, barangay, type) {
+            socket.emit('responded', { timestamp: timestamp, lat: lat, lon: lon, barangay: barangay, emergency_type: type });
             alert('Response sent for alert at ' + timestamp);
         };
 
-        // Fallback notification
         function showNotification(message) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.style.display = 'block';
             setTimeout(() => notification.style.display = 'none', 5000);
         }
+
+        updateCharts();
+        updateStats();
     });
     </script>
 </body>
