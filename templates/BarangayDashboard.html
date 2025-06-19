@@ -12,13 +12,10 @@
         #map { height: 400px; width: 100%; }
         #alert-container { max-height: 300px; overflow-y: auto; border: 1px solid red; padding: 10px; }
         .alert-item { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: #333; }
-        #enableSoundPrompt { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; display: none; z-index: 1001; }
-        #enableSoundPrompt:hover { background-color: #45a049; }
         .notification { position: fixed; bottom: 10px; right: 10px; background-color: #f44336; color: white; padding: 15px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
-    <button id="enableSoundPrompt" onclick="enableSound()">Click to Enable Sound</button>
     <div class="sidebar">
         <nav>
             <ul>
@@ -75,7 +72,6 @@
                 <div id="image-gallery"></div>
             </section>
         </main>
-        <audio id="alertSound" src="{{ url_for('static', filename='Alert.mp3') }}" preload="auto"></audio>
         <div id="notification" class="notification"></div>
     </div>
     <script>
@@ -88,19 +84,6 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(barangayMap);
         window.barangayMap = barangayMap;
-
-        // Track cursor activity
-        let cursorActive = false;
-        document.addEventListener('mousemove', () => {
-            console.log('Cursor detected');
-            cursorActive = true;
-            setTimeout(() => {
-                if (!document.hasFocus() || !document.querySelector(':hover')) {
-                    console.log('Cursor inactive');
-                    cursorActive = false;
-                }
-            }, 2000); // Reset after 2 seconds of inactivity
-        });
 
         // Connect to SocketIO
         const socket = io('https://alertnow.onrender.com');
@@ -122,33 +105,6 @@
                 }
             });
         }
-
-        // Enable sound function
-        window.enableSound = function() {
-            const alertSound = document.getElementById('alertSound');
-            if (alertSound) {
-                alertSound.muted = true; // Mute initial play to unlock silently
-                alertSound.play().then(() => {
-                    audioEnabled = true;
-                    alertSound.muted = false; // Unmute for alerts
-                    alertSound.pause();
-                    alertSound.currentTime = 0;
-                    console.log('Audio context unlocked successfully');
-                    document.getElementById('enableSoundPrompt').style.display = 'none'; // Hide prompt
-                    // Play sound for the current alert if one is pending
-                    if (pendingAlert) {
-                        notifyAlert(pendingAlert);
-                        pendingAlert = null;
-                    }
-                }).catch(e => {
-                    console.error('Failed to unlock audio context:', e);
-                    showNotification('Failed to enable sound. Please try again.');
-                });
-            }
-        };
-
-        let audioEnabled = false;
-        let pendingAlert = null;
 
         // Centralized function to update all UI components
         function updateUIWithAlert(data) {
@@ -188,41 +144,23 @@
             updateCharts();
         }
 
-        // Function to notify alert with sound and/or notification
+        // Function to notify alert with notification only
         function notifyAlert(data) {
-            console.log('Notifying alert, audioEnabled:', audioEnabled, 'cursorActive:', cursorActive);
-            const alertSound = document.getElementById('alertSound');
-            if (audioEnabled && alertSound) {
-                alertSound.volume = 1.0;
-                alertSound.play().then(() => {
-                    console.log('Alert sound played successfully for:', data.emergency_type);
-                }).catch(e => {
-                    console.error('Failed to play alert sound:', e);
-                    showBrowserNotification(data);
-                });
-            } else if (!audioEnabled) {
-                // Show prompt regardless of cursor for now, with fallback
-                pendingAlert = data;
-                document.getElementById('enableSoundPrompt').style.display = 'block';
-                console.log('Prompt displayed for alert:', data.emergency_type);
-            } else if ('Notification' in window && Notification.permission === 'granted') {
+            if ('Notification' in window && Notification.permission === 'granted') {
                 showBrowserNotification(data);
             } else {
-                console.warn('Audio not enabled or notification permission not granted.');
-                showNotification(`New alert (${data.emergency_type || 'Unknown'}) received! Enable sound or allow notifications.`);
+                console.warn('Notification permission not granted.');
+                showNotification(`New alert (${data.emergency_type || 'Unknown'}) received!`);
             }
         }
 
-        // Browser notification with sound
+        // Browser notification
         function showBrowserNotification(data) {
             if ('Notification' in window && Notification.permission === 'granted') {
                 const notification = new Notification('New Alert', {
                     body: `${data.emergency_type || 'Unknown'} at ${data.barangay || 'Unknown Barangay'}`,
                     icon: '/static/favicon.ico' // Optional: Add a favicon or image
                 });
-                // Attempt to play sound via notification
-                const audio = new Audio('/static/Alert.mp3');
-                audio.play().catch(e => console.error('Notification audio failed:', e));
             }
         }
 
