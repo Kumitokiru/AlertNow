@@ -136,12 +136,16 @@
         // Function to play the alert sound
         function playAlertSound() {
             const alertSound = document.getElementById('alertSound');
-            alertSound.play().then(() => {
-                console.log('Alert sound played successfully');
-            }).catch(e => {
-                console.error('Failed to play alert sound:', e);
-                showNotification('New alert received!'); // Fallback notification
-            });
+            if (alertSound) {
+                console.log('Attempting to play alert sound');
+                alertSound.play().then(() => {
+                    console.log('Sound played successfully');
+                }).catch(error => {
+                    console.error('Failed to play sound:', error);
+                });
+            } else {
+                console.error('Audio element not found');
+            }
         }
 
         // Update Incident Trends and Accident Distribution
