@@ -124,6 +124,11 @@
             document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
         }
 
+        function playAlertSound() {
+            const alertSound = document.getElementById('alertSound');
+            alertSound.play().catch(e => console.error('Audio play failed:', e));
+        }
+        
         // Update Incident Trends and Accident Distribution
         function updateCharts() {
             fetch('/api/distribution?role=barangay')
