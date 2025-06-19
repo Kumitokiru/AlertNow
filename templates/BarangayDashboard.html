@@ -14,6 +14,7 @@
         .alert-item { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: #333; }
         #enableSoundButton { position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
         #enableSoundButton:hover { background-color: #45a049; }
+        .notification { position: fixed; bottom: 10px; right: 10px; background-color: #f44336; color: white; padding: 15px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
@@ -74,7 +75,8 @@
                 <div id="image-gallery"></div>
             </section>
         </main>
-        <audio id="alertSound" src="{{ url_for('static', filename='Alert.mp3') }}"></audio>
+        <audio id="alertSound" src="{{ url_for('static', filename='audio/Alert.mp3') }}" preload="auto"></audio>
+        <div id="notification" class="notification"></div>
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -113,8 +115,10 @@
             if (feed) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert-item';
+                // Use local timezone for display
+                const localTime = new Date(data.timestamp || Date.now()).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles' });
                 alertDiv.innerHTML = `
-                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</p>
+                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${localTime}</p>
                     <button onclick="respondAlert('${data.timestamp}')">Respond</button>
                 `;
                 feed.prepend(alertDiv);
@@ -137,11 +141,11 @@
         function playAlertSound() {
             const alertSound = document.getElementById('alertSound');
             if (alertSound) {
-                console.log('Attempting to play alert sound');
                 alertSound.play().then(() => {
-                    console.log('Sound played successfully');
-                }).catch(error => {
-                    console.error('Failed to play sound:', error);
+                    console.log('Alert sound played successfully');
+                }).catch(e => {
+                    console.error('Failed to play alert sound:', e);
+                    showNotification('New alert received! Check the dashboard.');
                 });
             } else {
                 console.error('Audio element not found');
@@ -209,16 +213,10 @@
 
         // Fallback notification
         function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.style.position = 'fixed';
-            notification.style.bottom = '10px';
-            notification.style.right = '10px';
-            notification.style.backgroundColor = '#f44336';
-            notification.style.color = 'white';
-            notification.style.padding = '15px';
-            notification.innerText = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 5000);
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => notification.style.display = 'none', 5000);
         }
     });
     </script>
