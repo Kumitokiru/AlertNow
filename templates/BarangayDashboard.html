@@ -3,11 +3,16 @@
 <head>
     <title>Barangay {{ barangay }} Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha512-Zcn6bjR/8dTUseNhaL9ctSzyVPTAwSlg9/Gb+2dkk1rFRlDLc//YxV2g0OS7DH6QuZehGosRuEXk+GCCMQLEAMQ==" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha512-BwHfrr4c9kmPkLvB2q+1nRg6/8Lw1DlFE8wTHT4QdElU0OmsuFSESLATpF+0XUOKtw1XhjdMcQPU+noFZQBkCTQ==" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <style>
+        #map { height: 400px; width: 100%; }
+        #alert-container { max-height: 300px; overflow-y: auto; border: 1px solid red; padding: 10px; }
+        .alert-item { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: #333; }
+    </style>
 </head>
 <body>
     <div class="sidebar">
@@ -44,8 +49,8 @@
         <main>
             <section class="map-section">
                 <h2>Live Image Map Location</h2>
-                <p>Coordinates: {{ lat_coord }}, {{ lon_coord }} (Barangay: {{ barangay }})</p>
-                <div id="map" style="height: 400px; width: 100%; border: 1px solid #ccc;"></div>
+                <p>Coordinates: <span id="map-coordinates">{{ lat_coord }}, {{ lon_coord }}</span> (Barangay: {{ barangay }})</p>
+                <div id="map"></div>
             </section>
             <section class="stats">
                 <p>Total Incidents: <span id="total-incidents">{{ stats.total() if stats else 0 }}</span></p>
@@ -53,7 +58,7 @@
             </section>
             <section class="alerts" id="alerts">
                 <h2>Live Alerts</h2>
-                <div id="alert-container" style="border: 1px solid red; padding: 10px;"></div> <!-- Added border and padding for visibility -->
+                <div id="alert-container"></div>
             </section>
             <section class="charts" id="analytics">
                 <h2>Incident Trends</h2>
@@ -80,68 +85,105 @@
         window.barangayMap = barangayMap;
 
         // Connect to SocketIO
-        const socket = io('https://alertnow.onrender.com');
+        const socket = io('https://alertnow.onrender.com'); // Ensure this matches your server URL
         socket.on('connect', () => console.log('Connected to SocketIO server'));
         socket.on('new_alert', (data) => {
-            console.log('New alert received:', data); // Debug log
+            console.log('Alert received:', data); // Confirm alert data is received
+            updateUIWithAlert(data);
+        });
+
+        // Centralized function to update all UI components
+        function updateUIWithAlert(data) {
+            // Update Live Alerts
             const feed = document.getElementById('alert-container');
             if (feed) {
                 const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert-item';
                 alertDiv.innerHTML = `
                     <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</p>
-                    ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100" style="margin: 5px;"/>` : ''}
                     <button onclick="respondAlert('${data.timestamp}')">Respond</button>
                 `;
                 feed.prepend(alertDiv);
-
-                if (data.lat && data.lon) {
-                    L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
-                        data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
-                    ).openPopup();
-                }
-
-                document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
             } else {
-                console.error('alert-container element not found');
+                console.error('alert-container not found');
             }
-        });
 
-        // Response handler
+            // Update Live Image Map Location
+            if (data.lat && data.lon) {
+                L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
+                    `${data.emergency_type || 'Alert'} at ${data.barangay || 'Unknown'}`
+                ).openPopup();
+                document.getElementById('map-coordinates').textContent = `${data.lat}, ${data.lon}`;
+            }
+
+            // Update stats and charts
+            updateStats();
+            updateCharts();
+
+            // Play alert sound
+            document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
+        }
+
+        // Update Incident Trends and Accident Distribution
+        function updateCharts() {
+            fetch('/api/distribution?role=barangay')
+                .then(res => res.json())
+                .then(dist => {
+                    const ctxDist = document.getElementById('distChart').getContext('2d');
+                    if (window.distChart) window.distChart.destroy();
+                    window.distChart = new Chart(ctxDist, {
+                        type: 'pie',
+                        data: {
+                            labels: Object.keys(dist),
+                            datasets: [{
+                                data: Object.values(dist),
+                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                })
+                .catch(err => console.error('Failed to fetch distribution:', err));
+
+            // Placeholder for Incident Trends (requires time-series data from backend)
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            if (window.trendChart) window.trendChart.destroy();
+            window.trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
+                    datasets: [{
+                        label: 'Incidents',
+                        data: [5, 8, 3, 7, 4, 6, 2], // Replace with real data from backend
+                        borderColor: '#36A2EB',
+                        fill: false
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Update Total Incidents and Critical Incidents
+        function updateStats() {
+            fetch('/api/stats')
+                .then(res => res.json())
+                .then(stats => {
+                    document.getElementById('total-incidents').textContent = stats.total || 0;
+                    document.getElementById('critical-incidents').textContent = stats.critical || 0;
+                })
+                .catch(err => console.error('Failed to fetch stats:', err));
+        }
+
+        // Initial load
+        updateCharts();
+        updateStats();
+
+        // Respond to alert
         window.respondAlert = function(timestamp) {
             socket.emit('responded', { timestamp: timestamp });
             alert('Response sent for alert at ' + timestamp);
         };
     });
-
-    function updateCharts() {
-        fetch('/api/distribution?role=barangay')
-            .then(res => res.json())
-            .then(dist => {
-                const ctxDist = document.getElementById('distChart').getContext('2d');
-                if (window.distChart) window.distChart.destroy();
-                window.distChart = new Chart(ctxDist, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(dist),
-                        datasets: [{ data: Object.values(dist), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'] }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            });
-
-        const ctxTrend = document.getElementById('trendChart').getContext('2d');
-        if (window.trendChart) window.trendChart.destroy();
-        window.trendChart = new Chart(ctxTrend, {
-            type: 'line',
-            data: {
-                labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
-                datasets: [{ label: 'Incidents', data: [5, 8, 3, 7, 4, 6, 2], borderColor: '#36A2EB', fill: false }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-
-    updateCharts();
     </script>
 </body>
 </html>
