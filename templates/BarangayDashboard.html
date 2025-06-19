@@ -71,7 +71,8 @@
                 <div id="image-gallery"></div>
             </section>
         </main>
-        <audio id="alertSound" src="{{ url_for('static', filename='audio/Alert.mp3') }}" preload="auto"></audio>
+        <audio id="alertSound" src="/static/audio/Alert.mp3" preload="auto"></audio>
+
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -128,7 +129,7 @@
             const alertSound = document.getElementById('alertSound');
             alertSound.play().catch(e => console.error('Audio play failed:', e));
         }
-        
+
         // Update Incident Trends and Accident Distribution
         function updateCharts() {
             fetch('/api/distribution?role=barangay')
