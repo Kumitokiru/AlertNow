@@ -109,23 +109,21 @@
             });
         }
 
-        // Enable audio after button click
+        // Enable audio after button click (silent unlock)
         let audioEnabled = false;
         document.getElementById('enableSoundButton').addEventListener('click', () => {
             const alertSound = document.getElementById('alertSound');
             if (alertSound) {
+                alertSound.muted = true; // Mute the initial play to unlock context silently
                 alertSound.play().then(() => {
                     audioEnabled = true;
+                    alertSound.muted = false; // Unmute for future plays
                     alertSound.pause();
                     alertSound.currentTime = 0;
-                    console.log('Audio enabled successfully');
+                    console.log('Audio context unlocked successfully');
                     document.getElementById('enableSoundButton').style.display = 'none'; // Hide button
-                    // Play a sample sound to confirm
-                    alertSound.play().then(() => {
-                        console.log('Sample sound played');
-                    }).catch(e => console.error('Sample sound failed:', e));
                 }).catch(e => {
-                    console.error('Failed to enable audio:', e);
+                    console.error('Failed to unlock audio context:', e);
                     showNotification('Failed to enable sound. Please try again.');
                 });
             }
@@ -196,7 +194,7 @@
                     icon: '/static/favicon.ico' // Optional: Add a favicon or image
                 });
                 // Attempt to play sound via notification
-                const audio = new Audio('/static/Alert.mp3'); // Updated path
+                const audio = new Audio('/static/Alert.mp3');
                 audio.play().catch(e => console.error('Notification audio failed:', e));
             }
         }
