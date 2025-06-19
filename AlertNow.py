@@ -305,7 +305,7 @@ def load_coords():
         print(f"Error loading coords.txt: {e}")
     return alerts
 
-alerts = load_coords()
+
 
 alerts = deque(maxlen=100)
 
