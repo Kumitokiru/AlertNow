@@ -92,9 +92,13 @@
         // Track cursor activity
         let cursorActive = false;
         document.addEventListener('mousemove', () => {
+            console.log('Cursor detected');
             cursorActive = true;
             setTimeout(() => {
-                if (!document.hasFocus() || !document.querySelector(':hover')) cursorActive = false;
+                if (!document.hasFocus() || !document.querySelector(':hover')) {
+                    console.log('Cursor inactive');
+                    cursorActive = false;
+                }
             }, 2000); // Reset after 2 seconds of inactivity
         });
 
@@ -110,6 +114,7 @@
         // Request notification permission on load
         if ('Notification' in window) {
             Notification.requestPermission().then(permission => {
+                console.log('Notification permission:', permission);
                 if (permission === 'granted') {
                     console.log('Notification permission granted');
                 } else {
@@ -185,6 +190,7 @@
 
         // Function to notify alert with sound and/or notification
         function notifyAlert(data) {
+            console.log('Notifying alert, audioEnabled:', audioEnabled, 'cursorActive:', cursorActive);
             const alertSound = document.getElementById('alertSound');
             if (audioEnabled && alertSound) {
                 alertSound.volume = 1.0;
@@ -194,10 +200,11 @@
                     console.error('Failed to play alert sound:', e);
                     showBrowserNotification(data);
                 });
-            } else if (!audioEnabled && cursorActive) {
-                // Show prompt to enable sound if cursor is active
+            } else if (!audioEnabled) {
+                // Show prompt regardless of cursor for now, with fallback
                 pendingAlert = data;
                 document.getElementById('enableSoundPrompt').style.display = 'block';
+                console.log('Prompt displayed for alert:', data.emergency_type);
             } else if ('Notification' in window && Notification.permission === 'granted') {
                 showBrowserNotification(data);
             } else {
