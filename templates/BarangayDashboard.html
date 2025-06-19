@@ -196,7 +196,7 @@
                     icon: '/static/favicon.ico' // Optional: Add a favicon or image
                 });
                 // Attempt to play sound via notification
-                const audio = new Audio('/static/audio/Alert.mp3');
+                const audio = new Audio('/static/Alert.mp3'); // Updated path
                 audio.play().catch(e => console.error('Notification audio failed:', e));
             }
         }
