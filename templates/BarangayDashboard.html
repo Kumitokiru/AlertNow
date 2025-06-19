@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Barangay Dashboard</title>
+    <title>Barangay {{ barangay }} Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha512-Zcn6bjR/8dTUseNhaL9ctSzyVPTAwSlg9/Gb+2dkk1rFRlDLc//YxV2g0OS7DH6QuZehGosRuEXk+GCCMQLEAMQ==" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha512-BwHfrr4c9kmPkLvB2q+1nRg6/8Lw1DlFE8wTHT4QdElU0OmsuFSESLATpF+0XUOKtw1XhjdMcQPU+noFZQBkCTQ==" crossorigin=""></script>
@@ -53,7 +53,7 @@
             </section>
             <section class="alerts" id="alerts">
                 <h2>Live Alerts</h2>
-                <div id="alert-container"></div>
+                <div id="alert-container" style="border: 1px solid red; padding: 10px;"></div> <!-- Added border and padding for visibility -->
             </section>
             <section class="charts" id="analytics">
                 <h2>Incident Trends</h2>
@@ -70,10 +70,12 @@
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Initialize Leaflet map
-        const barangayMap = L.map('map').setView([14.5995, 120.9842], 13); // Default to Manila
+        // Initialize Leaflet map with dynamic coordinates
+        const lat = {{ lat_coord|default(14.5995) }};
+        const lon = {{ lon_coord|default(120.9842) }};
+        const barangayMap = L.map('map').setView([lat, lon], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors'
         }).addTo(barangayMap);
         window.barangayMap = barangayMap;
 
@@ -81,28 +83,35 @@
         const socket = io('https://alertnow.onrender.com');
         socket.on('connect', () => console.log('Connected to SocketIO server'));
         socket.on('new_alert', (data) => {
+            console.log('New alert received:', data); // Debug log
             const feed = document.getElementById('alert-container');
-            const alertDiv = document.createElement('div');
-            alertDiv.innerHTML = `
-                <p><strong>${data.barangay}</strong> - ${data.emergency_type} at ${new Date(data.timestamp).toLocaleTimeString()}</p>
-                ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100"/>` : ''}
-            `;
-            feed.prepend(alertDiv);
+            if (feed) {
+                const alertDiv = document.createElement('div');
+                alertDiv.innerHTML = `
+                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${new Date(data.timestamp || Date.now()).toLocaleTimeString()}</p>
+                    ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100" style="margin: 5px;"/>` : ''}
+                    <button onclick="respondAlert('${data.timestamp}')">Respond</button>
+                `;
+                feed.prepend(alertDiv);
 
-            if (data.lat && data.lon) {
-                L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
-                    data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
-                );
+                if (data.lat && data.lon) {
+                    L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
+                        data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="100">` : 'No image'
+                    ).openPopup();
+                }
+
+                document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
+            } else {
+                console.error('alert-container element not found');
             }
-
-            document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
         });
-    });
 
-    function respondAlert() {
-        socket.emit('responded', {});
-        alert('Response sent.');
-    }
+        // Response handler
+        window.respondAlert = function(timestamp) {
+            socket.emit('responded', { timestamp: timestamp });
+            alert('Response sent for alert at ' + timestamp);
+        };
+    });
 
     function updateCharts() {
         fetch('/api/distribution?role=barangay')
@@ -115,17 +124,20 @@
                     data: {
                         labels: Object.keys(dist),
                         datasets: [{ data: Object.values(dist), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'] }]
-                    }
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
                 });
             });
+
         const ctxTrend = document.getElementById('trendChart').getContext('2d');
         if (window.trendChart) window.trendChart.destroy();
         window.trendChart = new Chart(ctxTrend, {
             type: 'line',
             data: {
-                labels: ['Jun 10', 'Jun 11', 'Jun 12'],
-                datasets: [{ label: 'Incidents', data: [5, 8, 3], borderColor: '#36A2EB', fill: false }]
-            }
+                labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
+                datasets: [{ label: 'Incidents', data: [5, 8, 3, 7, 4, 6, 2], borderColor: '#36A2EB', fill: false }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
