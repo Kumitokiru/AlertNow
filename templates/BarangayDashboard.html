@@ -12,9 +12,12 @@
         #map { height: 400px; width: 100%; }
         #alert-container { max-height: 300px; overflow-y: auto; border: 1px solid red; padding: 10px; }
         .alert-item { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: #333; }
+        #enableSoundButton { position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        #enableSoundButton:hover { background-color: #45a049; }
     </style>
 </head>
 <body>
+    <button id="enableSoundButton">Enable Sound</button>
     <div class="sidebar">
         <nav>
             <ul>
@@ -71,8 +74,7 @@
                 <div id="image-gallery"></div>
             </section>
         </main>
-        <audio id="alertSound" src="/static/audio/Alert.mp3" preload="auto"></audio>
-
+        <audio id="alertSound" src="{{ url_for('static', filename='audio/Alert.mp3') }}" preload="auto"></audio>
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -86,16 +88,27 @@
         window.barangayMap = barangayMap;
 
         // Connect to SocketIO
-        const socket = io('https://alertnow.onrender.com'); // Ensure this matches your server URL
+        const socket = io('https://alertnow.onrender.com');
         socket.on('connect', () => console.log('Connected to SocketIO server'));
         socket.on('new_alert', (data) => {
-            console.log('Alert received:', data); // Confirm alert data is received
+            console.log('Alert received:', data);
             updateUIWithAlert(data);
+            playAlertSound();
+        });
+
+        // Enable audio after button click
+        document.getElementById('enableSoundButton').addEventListener('click', () => {
+            const alertSound = document.getElementById('alertSound');
+            alertSound.play().then(() => {
+                alertSound.pause();
+                alertSound.currentTime = 0;
+                console.log('Audio enabled');
+                document.getElementById('enableSoundButton').style.display = 'none'; // Hide button after enabling
+            }).catch(e => console.error('Failed to enable audio:', e));
         });
 
         // Centralized function to update all UI components
         function updateUIWithAlert(data) {
-            // Update Live Alerts
             const feed = document.getElementById('alert-container');
             if (feed) {
                 const alertDiv = document.createElement('div');
@@ -109,7 +122,6 @@
                 console.error('alert-container not found');
             }
 
-            // Update Live Image Map Location
             if (data.lat && data.lon) {
                 L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
                     `${data.emergency_type || 'Alert'} at ${data.barangay || 'Unknown'}`
@@ -117,17 +129,19 @@
                 document.getElementById('map-coordinates').textContent = `${data.lat}, ${data.lon}`;
             }
 
-            // Update stats and charts
             updateStats();
             updateCharts();
-
-            // Play alert sound
-            document.getElementById('alertSound').play().catch(e => console.error('Audio play failed:', e));
         }
 
+        // Function to play the alert sound
         function playAlertSound() {
             const alertSound = document.getElementById('alertSound');
-            alertSound.play().catch(e => console.error('Audio play failed:', e));
+            alertSound.play().then(() => {
+                console.log('Alert sound played successfully');
+            }).catch(e => {
+                console.error('Failed to play alert sound:', e);
+                showNotification('New alert received!'); // Fallback notification
+            });
         }
 
         // Update Incident Trends and Accident Distribution
@@ -151,7 +165,6 @@
                 })
                 .catch(err => console.error('Failed to fetch distribution:', err));
 
-            // Placeholder for Incident Trends (requires time-series data from backend)
             const ctxTrend = document.getElementById('trendChart').getContext('2d');
             if (window.trendChart) window.trendChart.destroy();
             window.trendChart = new Chart(ctxTrend, {
@@ -160,7 +173,7 @@
                     labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
                     datasets: [{
                         label: 'Incidents',
-                        data: [5, 8, 3, 7, 4, 6, 2], // Replace with real data from backend
+                        data: [5, 8, 3, 7, 4, 6, 2], // Replace with real data
                         borderColor: '#36A2EB',
                         fill: false
                     }]
@@ -189,6 +202,20 @@
             socket.emit('responded', { timestamp: timestamp });
             alert('Response sent for alert at ' + timestamp);
         };
+
+        // Fallback notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.bottom = '10px';
+            notification.style.right = '10px';
+            notification.style.backgroundColor = '#f44336';
+            notification.style.color = 'white';
+            notification.style.padding = '15px';
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
     });
     </script>
 </body>
