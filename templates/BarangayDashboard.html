@@ -93,7 +93,7 @@
         const socket = io('https://alertnow.onrender.com');
         socket.on('connect', () => console.log('Connected to SocketIO server'));
         socket.on('new_alert', (data) => {
-            console.log('Alert received:', data);
+            console.log('New alert event received with data:', data); // Debug the full event
             updateUIWithAlert(data);
             notifyAlert(data);
         });
@@ -170,6 +170,7 @@
         // Function to notify alert with sound and/or notification
         function notifyAlert(data) {
             const alertSound = document.getElementById('alertSound');
+            console.log('Notifying alert - audioEnabled:', audioEnabled, 'alertSound exists:', !!alertSound); // Debug state
             if (audioEnabled && alertSound) {
                 alertSound.volume = 1.0;
                 alertSound.play().then(() => {
