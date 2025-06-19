@@ -75,7 +75,7 @@
                 <div id="image-gallery"></div>
             </section>
         </main>
-        <audio id="alertSound" src="{{ url_for('static', filename='Alert.mp3') }}" preload="auto"></audio>
+        <audio id="alertSound" src="{{ url_for('static', filename='audio/Alert.mp3') }}" preload="auto"></audio>
         <div id="notification" class="notification"></div>
     </div>
     <script>
@@ -95,18 +95,40 @@
         socket.on('new_alert', (data) => {
             console.log('Alert received:', data);
             updateUIWithAlert(data);
-            playAlertSound();
+            notifyAlert(data);
         });
 
+        // Request notification permission on load
+        if ('Notification' in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                } else {
+                    console.warn('Notification permission denied');
+                }
+            });
+        }
+
         // Enable audio after button click
+        let audioEnabled = false;
         document.getElementById('enableSoundButton').addEventListener('click', () => {
             const alertSound = document.getElementById('alertSound');
-            alertSound.play().then(() => {
-                alertSound.pause();
-                alertSound.currentTime = 0;
-                console.log('Audio enabled');
-                document.getElementById('enableSoundButton').style.display = 'none'; // Hide button after enabling
-            }).catch(e => console.error('Failed to enable audio:', e));
+            if (alertSound) {
+                alertSound.play().then(() => {
+                    audioEnabled = true;
+                    alertSound.pause();
+                    alertSound.currentTime = 0;
+                    console.log('Audio enabled successfully');
+                    document.getElementById('enableSoundButton').style.display = 'none'; // Hide button
+                    // Play a sample sound to confirm
+                    alertSound.play().then(() => {
+                        console.log('Sample sound played');
+                    }).catch(e => console.error('Sample sound failed:', e));
+                }).catch(e => {
+                    console.error('Failed to enable audio:', e);
+                    showNotification('Failed to enable sound. Please try again.');
+                });
+            }
         });
 
         // Centralized function to update all UI components
@@ -115,10 +137,20 @@
             if (feed) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert-item';
-                // Use local timezone for display
-                const localTime = new Date(data.timestamp || Date.now()).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles' });
+                // Debug the raw timestamp
+                console.log('Raw timestamp from server:', data.timestamp);
+                // Convert timestamp to local time (PST)
+                let displayTime;
+                try {
+                    const serverTime = new Date(data.timestamp || Date.now());
+                    displayTime = serverTime.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
+                    console.log('Converted local time:', displayTime);
+                } catch (e) {
+                    console.error('Error parsing timestamp:', e);
+                    displayTime = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
+                }
                 alertDiv.innerHTML = `
-                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${localTime}</p>
+                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${displayTime}</p>
                     <button onclick="respondAlert('${data.timestamp}')">Respond</button>
                 `;
                 feed.prepend(alertDiv);
@@ -137,18 +169,35 @@
             updateCharts();
         }
 
-        // Function to play the alert sound
-        function playAlertSound() {
+        // Function to notify alert with sound and/or notification
+        function notifyAlert(data) {
             const alertSound = document.getElementById('alertSound');
-            if (alertSound) {
+            if (audioEnabled && alertSound) {
+                alertSound.volume = 1.0;
                 alertSound.play().then(() => {
-                    console.log('Alert sound played successfully');
+                    console.log('Alert sound played successfully for:', data.emergency_type);
                 }).catch(e => {
                     console.error('Failed to play alert sound:', e);
-                    showNotification('New alert received! Check the dashboard.');
+                    showBrowserNotification(data);
                 });
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+                showBrowserNotification(data);
             } else {
-                console.error('Audio element not found');
+                console.warn('Audio not enabled or notification permission not granted.');
+                showNotification(`New alert (${data.emergency_type || 'Unknown'}) received! Enable sound or allow notifications.`);
+            }
+        }
+
+        // Browser notification with sound
+        function showBrowserNotification(data) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification('New Alert', {
+                    body: `${data.emergency_type || 'Unknown'} at ${data.barangay || 'Unknown Barangay'}`,
+                    icon: '/static/favicon.ico' // Optional: Add a favicon or image
+                });
+                // Attempt to play sound via notification
+                const audio = new Audio('/static/audio/Alert.mp3');
+                audio.play().catch(e => console.error('Notification audio failed:', e));
             }
         }
 
