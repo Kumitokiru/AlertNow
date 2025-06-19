@@ -94,27 +94,15 @@
             notifyAlert(data);
         });
 
-        // Request notification permission on load
-        if ('Notification' in window) {
-            Notification.requestPermission().then(permission => {
-                console.log('Notification permission:', permission);
-                if (permission === 'granted') {
-                    console.log('Notification permission granted');
-                } else {
-                    console.warn('Notification permission denied');
-                }
-            });
-        }
-
         // Centralized function to update all UI components
         function updateUIWithAlert(data) {
             const feed = document.getElementById('alert-container');
             if (feed) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert-item';
-                // Debug the raw timestamp
-                console.log('Raw timestamp from server:', data.timestamp);
-                // Convert timestamp to local time (PST)
+                const now = new Date();
+                const uploadTime = data.imageUploadTime ? new Date(data.imageUploadTime) : null;
+                const isImageValid = uploadTime && (now - uploadTime) <= 30 * 60 * 1000;
                 let displayTime;
                 try {
                     const serverTime = new Date(data.timestamp || Date.now());
@@ -125,8 +113,9 @@
                     displayTime = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
                 }
                 alertDiv.innerHTML = `
-                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Unknown Type'} at ${displayTime}</p>
-                    <button onclick="respondAlert('${data.timestamp}')">Respond</button>
+                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
+                    <button onclick="respondAlert('${data.timestamp}', ${data.lat || 0}, ${data.lon || 0}, '${data.barangay || 'N/A'}', '${data.emergency_type || 'Not Specified'}')">Respond</button>
+                    ${data.image && isImageValid ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
                 `;
                 feed.prepend(alertDiv);
             } else {
@@ -159,7 +148,7 @@
             if ('Notification' in window && Notification.permission === 'granted') {
                 const notification = new Notification('New Alert', {
                     body: `${data.emergency_type || 'Unknown'} at ${data.barangay || 'Unknown Barangay'}`,
-                    icon: '/static/favicon.ico' // Optional: Add a favicon or image
+                    icon: '/static/favicon.ico'
                 });
             }
         }
@@ -193,7 +182,7 @@
                     labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
                     datasets: [{
                         label: 'Incidents',
-                        data: [5, 8, 3, 7, 4, 6, 2], // Replace with real data
+                        data: [5, 8, 3, 7, 4, 6, 2],
                         borderColor: '#36A2EB',
                         fill: false
                     }]
@@ -218,8 +207,8 @@
         updateStats();
 
         // Respond to alert
-        window.respondAlert = function(timestamp) {
-            socket.emit('responded', { timestamp: timestamp });
+        window.respondAlert = function(timestamp, lat, lon, barangay, type) {
+            socket.emit('responded', { timestamp: timestamp, lat: lat, lon: lon, barangay: barangay, emergency_type: type });
             alert('Response sent for alert at ' + timestamp);
         };
 
