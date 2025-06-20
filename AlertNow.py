@@ -12,6 +12,7 @@ from collections import Counter
 from datetime import datetime
 from alert_data import alerts
 from collections import deque
+import logging
 
 # Assuming these files are in the same directory as app.py
 from BarangayDashboard import get_barangay_stats, get_latest_alert
@@ -23,6 +24,12 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Replace with a strong, secret key
 socketio = SocketIO(app, cors_allowed_origins="*")
 logging.basicConfig(level=logging.DEBUG)
+
+
+data_dir = os.path.join(os.path.dirname(__file__), 'data')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+    logging.info(f"Created data directory at {data_dir}")
 
 # Load barangay_coords from coords.txt (assuming it's in an 'assets' folder)
 try:
@@ -75,35 +82,38 @@ except Exception as e:
     dt_classifier = None
 
 def get_db_connection():
-    """Establishes a connection to the SQLite database."""
     db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
-    # For Render with persistent disk, use: db_path = '/data/users_web.db'
+    app.logger.debug(f"Database path: {db_path}")
     conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row  # Allows accessing columns by name
+    conn.row_factory = sqlite3.Row
     return conn
+
+def get_db_connection():
+    db_path = os.path.join('/data', 'users_web.db')
+    if not os.path.exists(db_path):
+        db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/export_users', methods=['GET'])
+def export_users():
+    if session.get('role') != 'admin':  # Restrict access
+        return "Unauthorized", 403
+    conn = get_db_connection()
+    users = conn.execute('SELECT * FROM users').fetchall()
+    conn.close()
+    return jsonify([dict(user) for user in users])
 
 @app.route('/download_db', methods=['GET'])
 def download_db():
-       """Endpoint to download users_web.db (restricted to admin for security)."""
-       # Add authentication logic here (e.g., check session or API key)
-       if session.get('role') != 'admin':  # Example: Restrict to admin role
-           app.logger.warning("Unauthorized attempt to download users_web.db")
-           return "Unauthorized", 403
-
-       db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
-       if not os.path.exists(db_path):
-           app.logger.error("users_web.db not found at %s", db_path)
-           return "Database file not found", 404
-
-       # For Render persistent disk
-       if not os.path.exists(db_path):
-           db_path = '/data/users_web.db'
-           if not os.path.exists(db_path):
-               app.logger.error("users_web.db not found at /data/users_web.db")
-               return "Database file not found", 404
-
-       app.logger.debug("Serving users_web.db for download")
-       return send_file(db_path, as_attachment=True, download_name='users_web.db')
+    db_path = os.path.join('/data', 'users_web.db')
+    if not os.path.exists(db_path):
+        db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
+    if not os.path.exists(db_path):
+        return "Database file not found", 404
+    app.logger.debug(f"Serving database from: {db_path}")
+    return send_file(db_path, as_attachment=True, download_name='users_web.db')
 
 
 def construct_unique_id(role, barangay=None, contact_no=None, assigned_municipality=None):
@@ -123,6 +133,7 @@ def home():
 def signup_barangay():
     app.logger.debug("Accessing /signup_barangay with method: %s", request.method)
     if request.method == 'POST':
+        app.logger.debug(f"Form data received: {request.form}")
         barangay = request.form['barangay']
         assigned_municipality = request.form['municipality']
         province = request.form['province']
@@ -132,52 +143,31 @@ def signup_barangay():
         
         conn = get_db_connection()
         try:
-            conn.execute('''
+            app.logger.debug("Attempting to insert user data into database")
+            cursor = conn.execute('''
                 INSERT INTO users (barangay, role, contact_no, assigned_municipality, province, password)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (barangay, 'barangay', contact_no, assigned_municipality, province, password))
+            app.logger.debug(f"Rows affected by INSERT: {cursor.rowcount}")
             conn.commit()
-            app.logger.debug("Web user signed up: %s", unique_id)
+            # Verify insertion
+            user = conn.execute('SELECT * FROM users WHERE barangay = ? AND contact_no = ?', 
+                               (barangay, contact_no)).fetchone()
+            if user:
+                app.logger.debug(f"User found in database after insertion: {dict(user)}")
+            else:
+                app.logger.error("User not found in database after insertion")
+            app.logger.debug("User data inserted successfully: %s", unique_id)
             return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            app.logger.error("Web signup failed: Unique ID %s already exists", unique_id)
+        except sqlite3.IntegrityError as e:
+            app.logger.error("IntegrityError: %s", e)
             return "User already exists", 400
         except Exception as e:
-            app.logger.error(f"Web signup failed for {unique_id}: {e}", exc_info=True)
+            app.logger.error(f"Exception during signup: {e}", exc_info=True)
             return f"Signup failed: {e}", 500
         finally:
             conn.close()
     return render_template('SignUpPage.html')
-
-@app.route('/signup_resident', methods=['POST'])
-def signup_resident():
-    app.logger.debug("Accessing /signup_resident with method: POST (API)")
-    data = request.get_json()
-    barangay = data.get('barangay')
-    role = data.get('role', 'resident')
-    contact_no = data.get('contact_no')
-    assigned_municipality = data.get('assigned_municipality')
-    province = data.get('province')
-    password = data.get('password')
-    unique_id = construct_unique_id(role, barangay=barangay, contact_no=contact_no, assigned_municipality=assigned_municipality)
-
-    conn = get_db_connection()
-    try:
-        conn.execute('''
-            INSERT INTO users (barangay, role, contact_no, assigned_municipality, province, password)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (barangay, role, contact_no, assigned_municipality, province, password))
-        conn.commit()
-        app.logger.debug("Resident/Official signed up via API: %s", unique_id)
-        return jsonify({'status': 'success'})
-    except sqlite3.IntegrityError:
-        app.logger.error("API signup failed: Unique ID %s already exists", unique_id)
-        return jsonify({'error': 'User already exists'}), 400
-    except Exception as e:
-        app.logger.error(f"API signup failed for {unique_id}: {e}", exc_info=True)
-        return jsonify({'error': f'Signup failed: {e}'}), 500
-    finally:
-        conn.close()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -567,25 +557,26 @@ def pnp_dashboard():
                            google_api_key=GOOGLE_API_KEY)
 
 if __name__ == '__main__':
-       try:
-           conn = sqlite3.connect('data/users_web.db')
-           c = conn.cursor()
-           c.execute('''
-               CREATE TABLE IF NOT EXISTS users (
-                   barangay TEXT,
-                   role TEXT NOT NULL,
-                   contact_no TEXT,
-                   assigned_municipality TEXT,
-                   province TEXT,
-                   password TEXT NOT NULL,
-                   PRIMARY KEY (barangay, contact_no)
-               )
-           ''')
-           conn.commit()
-           conn.close()
-           logging.info("Database 'users_web.db' initialized successfully or already exists.")
-       except Exception as e:
-           logging.error(f"Failed to initialize database: {e}", exc_info=True)
+    db_path = os.path.join(os.path.dirname(__file__), 'data', 'users_web.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                barangay TEXT,
+                role TEXT NOT NULL,
+                contact_no TEXT,
+                assigned_municipality TEXT,
+                province TEXT,
+                password TEXT NOT NULL,
+                PRIMARY KEY (barangay, contact_no)
+            )
+        ''')
+        conn.commit()
+        conn.close()
+        logging.info("Database 'users_web.db' initialized successfully or already exists.")
+    except Exception as e:
+        logging.error(f"Failed to initialize database: {e}", exc_info=True)
 
-       port = int(os.environ.get('PORT', 5000))
-       socketio.run(app, host="0.0.0.0", port=port, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=True)
