@@ -219,28 +219,34 @@ def api_login():
 
 @app.route('/signup_cdrrmo_pnp', methods=['GET', 'POST'])
 def signup_cdrrmo_pnp():
-    app.logger.debug("Accessing /signup_cdrrmo_pnp with method: %s", request.method)
     if request.method == 'POST':
         role = request.form['role'].lower()
         assigned_municipality = request.form['municipality']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        unique_id = construct_unique_id(role, assigned_municipality=assigned_municipality, contact_no=contact_no)
+        unique_id = construct_unique_id(role, assigned_municipality, contact_no)
         
         conn = get_db_connection()
         try:
+            # Check for unique contact_no
+            existing_user = conn.execute('SELECT * FROM users WHERE contact_no = ?', (contact_no,)).fetchone()
+            if existing_user:
+                app.logger.error("Signup failed: Contact number %s already exists", contact_no)
+                return "Contact number already exists", 400
+            
+            # Insert user data without province
             conn.execute('''
-                INSERT INTO users (role, contact_no, assigned_municipality, province, password)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (role, contact_no, assigned_municipality, password)
+                VALUES (?, ?, ?, ?)
             ''', (role, contact_no, assigned_municipality, password))
             conn.commit()
-            app.logger.debug("Web user signed up: %s", unique_id)
+            app.logger.debug("User signed up successfully: %s", unique_id)
             return redirect(url_for('login_cdrrmo_pnp'))
-        except sqlite3.IntegrityError:
-            app.logger.error("Web signup failed: Unique ID %s already exists", unique_id)
+        except sqlite3.IntegrityError as e:
+            app.logger.error("IntegrityError during signup: %s", e)
             return "User already exists", 400
         except Exception as e:
-            app.logger.error(f"Web signup failed for {unique_id}: {e}", exc_info=True)
+            app.logger.error(f"Signup failed for {unique_id}: {e}", exc_info=True)
             return f"Signup failed: {e}", 500
         finally:
             conn.close()
