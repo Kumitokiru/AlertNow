@@ -13,6 +13,7 @@ from datetime import datetime
 from alert_data import alerts
 from collections import deque
 import logging
+import pytz
 
 # Assuming these files are in the same directory as app.py
 from BarangayDashboard import get_barangay_stats, get_latest_alert
@@ -376,8 +377,10 @@ def send_alert():
             'emergency_type': emergency_type,
             'image': image,
             'role': user_role,
+            'house_no': data.get('house_no', 'N/A'),
+            'street_no': data.get('street_no', 'N/A'),
             'barangay': data.get('barangay', 'N/A'),
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': datetime.now(pytz.timezone('Asia/Manila')).isoformat(),
             'imageUploadTime': image_upload_time
         }
         alerts.append(alert)
