@@ -4,5 +4,6 @@ eventlet==0.33.0
 joblib
 opencv-python
 numpy
+pytz
 scikit-learn
 Werkzeug==2.0.3 
