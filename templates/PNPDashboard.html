@@ -100,33 +100,31 @@
             if (feed) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert-item';
-                const now = new Date();
-                const uploadTime = data.imageUploadTime ? new Date(data.imageUploadTime) : null;
-                const isImageValid = uploadTime && (now - uploadTime) <= 30 * 60 * 1000;
                 let displayTime;
                 try {
                     const serverTime = new Date(data.timestamp || Date.now());
                     displayTime = serverTime.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
-                    console.log('Converted local time:', displayTime);
                 } catch (e) {
                     console.error('Error parsing timestamp:', e);
                     displayTime = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: true });
                 }
+                const address = `${data.house_no || 'N/A'}, ${data.street_no || 'N/A'}, ${data.barangay || 'N/A'}`;
                 alertDiv.innerHTML = `
-                    <p><strong>${data.barangay || 'Unknown Barangay'}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
+                    <p><strong>${address}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
                     <button onclick="respondAlert('${data.timestamp}', ${data.lat || 0}, ${data.lon || 0}, '${data.barangay || 'N/A'}', '${data.emergency_type || 'Not Specified'}')">Respond</button>
-                    ${data.image && isImageValid ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
+                    ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
                 `;
                 feed.prepend(alertDiv);
-            } else {
-                console.error('alert-container not found');
             }
 
             if (data.lat && data.lon) {
-                L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
+                const marker = L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
                     `${data.emergency_type || 'Alert'} at ${data.barangay || 'Unknown'}`
                 ).openPopup();
-                document.getElementById('map-coordinates').textContent = `${data.lat}, ${data.lon}`;
+                // Zoom only if there’s a single alert
+                if (feed.children.length === 1) {
+                    barangayMap.setView([data.lat, data.lon], 15); // Zoom level 15 for a closer view
+                }
             }
 
             updateStats();
