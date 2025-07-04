@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Barangay {{ barangay }} Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <meta charset="UTF-8">
+    <title>Barangay Dashboard</title>
+    <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="js/dashboard.js"></script>
     <style>
         #map { height: 400px; width: 100%; }
         #alert-container { max-height: 300px; overflow-y: auto; border: 1px solid red; padding: 10px; }
@@ -19,21 +19,18 @@
     <div class="sidebar">
         <nav>
             <ul>
-                <li><a href="{{ url_for('barangay_dashboard') }}"><span>🏠</span> Dashboard</a></li>
+                <li><a href="#"><span>🏠</span> Dashboard</a></li>
                 <li><a href="#alerts"><span>🔔</span> Alerts</a></li>
                 <li><a href="#map"><span>📍</span> Map</a></li>
-                <li><a href="#incidents"><span>📋</span> Incidents</a></li>
-                <li><a href="#images"><span>🖼️</span> Images</a></li>
-                <li><a href="#analytics"><span>📊</span> Analytics</a></li>
                 <li><a href="#notifications"><span>📣</span> Notifications</a></li>
                 <li><a href="#settings"><span>⚙️</span> Settings</a></li>
-                <li><a href="{{ url_for('logout') }}"><span>🚪</span> Log Out</a></li>
+                <li><a href="#"><span>🚪</span> Log Out</a></li>
             </ul>
         </nav>
     </div>
     <div class="dashboard">
         <header>
-            <h1>Barangay {{ barangay }} Dashboard</h1>
+            <h1>Barangay Dashboard</h1>
             <div class="filters">
                 <select id="time-filter">
                     <option value="24h">Last 24 Hours</option>
@@ -42,173 +39,73 @@
                 <select id="accident-type">
                     <option value="all">All Types</option>
                     <option value="fire">Fire</option>
-                    <option value="flood">Flood</option>
                     <option value="road_accident">Road Accident</option>
                 </select>
             </div>
         </header>
         <main>
             <section class="map-section">
-                <h2>Live Image Map Location</h2>
-                <p>Coordinates: <span id="map-coordinates">{{ lat_coord }}, {{ lon_coord }}</span> (Barangay: {{ barangay }})</p>
+                <h2>Barangay Map</h2>
+                <p>Coordinates: <span id="map-coordinates">14.6760, 121.0437</span></p>
                 <div id="map"></div>
-            </section>
-            <section class="stats">
-                <p>Total Incidents: <span id="total-incidents">{{ stats.total() if stats else 0 }}</span></p>
-                <p>Critical Incidents: <span id="critical-incidents">0</span></p>
             </section>
             <section class="alerts" id="alerts">
                 <h2>Live Alerts</h2>
                 <div id="alert-container"></div>
             </section>
-            <section class="charts" id="analytics">
-                <h2>Incident Trends</h2>
-                <canvas id="trendChart" width="400" height="200"></canvas>
-                <h2>Accident Distribution</h2>
-                <canvas id="distChart" width="400" height="200"></canvas>
-            </section>
-            <section class="images" id="images">
-                <h2>Accident Images</h2>
-                <div id="image-gallery"></div>
-            </section>
         </main>
         <div id="notification" class="notification"></div>
     </div>
-    <!-- [Existing HTML content remains unchanged until script section] -->
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Initialize Leaflet map with dynamic coordinates
-        const lat = {{ lat_coord|default(14.5995) }};
-        const lon = {{ lon_coord|default(120.9842) }};
-        const barangayMap = L.map('map').setView([lat, lon], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(barangayMap);
-        window.barangayMap = barangayMap;
+        document.addEventListener('DOMContentLoaded', () => {
+            const lat = 14.6760;
+            const lon = 121.0437;
+            const map = L.map('map').setView([lat, lon], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-        const socket = io('https://alertnow.onrender.com');
-        socket.on('connect', () => console.log('Connected to SocketIO server'));
-        socket.on('new_alert', (data) => {
-            console.log('Alert received:', data);
-            updateUIWithAlert(data);
-            notifyAlert(data);
-        });
-
-        function updateUIWithAlert(data) {
-            const feed = document.getElementById('alert-container');
-            if (feed) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert-item';
-                let displayTime;
-                try {
-                    const serverTime = new Date(data.timestamp || Date.now());
-                    displayTime = serverTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: true });
-                } catch (e) {
-                    console.error('Error parsing timestamp:', e);
-                    displayTime = serverTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: true });
-                }
-                const address = `${data.house_no || 'N/A'}, ${data.street_no || 'N/A'}, ${data.barangay || 'N/A'}`;
-                alertDiv.innerHTML = `
-                    <p><strong>${address}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
-                    <button onclick="respondAlert('${data.timestamp}', ${data.lat || 0}, ${data.lon || 0}, '${data.barangay || 'N/A'}', '${data.emergency_type || 'Not Specified'}')">Respond</button>
-                    ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
-                `;
-                feed.prepend(alertDiv);
-            }
-
-            if (data.lat && data.lon) {
-                const marker = L.marker([data.lat, data.lon]).addTo(barangayMap).bindPopup(
-                    `${data.emergency_type || 'Alert'} at ${data.barangay || 'Unknown'}`
-                ).openPopup();
-                // Zoom only if there’s a single alert
-                if (feed.children.length === 1) {
-                    barangayMap.setView([data.lat, data.lon], 15); // Zoom level 15 for a closer view
-                }
-            }
-
-            updateStats();
-            updateCharts();
-        }
-
-        function notifyAlert(data) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                showBrowserNotification(data);
-            } else {
-                showNotification(`New alert (${data.emergency_type || 'Unknown'}) received!`);
-            }
-        }
-
-        function showBrowserNotification(data) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('New Alert', {
-                    body: `${data.emergency_type || 'Unknown'} at ${data.barangay || 'Unknown Barangay'}`,
-                    icon: '/static/favicon.ico'
-                });
-            }
-        }
-
-        function updateCharts() {
-            fetch('/api/distribution?role=barangay')
-                .then(res => res.json())
-                .then(dist => {
-                    const ctxDist = document.getElementById('distChart').getContext('2d');
-                    if (window.distChart) window.distChart.destroy();
-                    window.distChart = new Chart(ctxDist, {
-                        type: 'pie',
-                        data: {
-                            labels: Object.keys(dist),
-                            datasets: [{
-                                data: Object.values(dist),
-                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-                })
-                .catch(err => console.error('Failed to fetch distribution:', err));
-
-            const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            if (window.trendChart) window.trendChart.destroy();
-            window.trendChart = new Chart(ctxTrend, {
-                type: 'line',
-                data: {
-                    labels: ['Jun 10', 'Jun 11', 'Jun 12', 'Jun 13', 'Jun 14', 'Jun 15', 'Jun 16'],
-                    datasets: [{
-                        label: 'Incidents',
-                        data: [5, 8, 3, 7, 4, 6, 2],
-                        borderColor: '#36A2EB',
-                        fill: false
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+            const socket = io('https://alertnow.onrender.com');
+            socket.on('connect', () => console.log('Connected to SocketIO server'));
+            socket.on('new_alert', (data) => {
+                updateUIWithAlert(data);
+                notifyAlert(data);
             });
-        }
 
-        function updateStats() {
-            fetch('/api/stats')
-                .then(res => res.json())
-                .then(stats => {
-                    document.getElementById('total-incidents').textContent = stats.total || 0;
-                    document.getElementById('critical-incidents').textContent = stats.critical || 0;
-                })
-                .catch(err => console.error('Failed to fetch stats:', err));
-        }
+            function updateUIWithAlert(data) {
+                const feed = document.getElementById('alert-container');
+                if (feed) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert-item';
+                    const displayTime = new Date(data.timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: true });
+                    const address = `${data.house_no || 'N/A'}, ${data.street_no || 'N/A'}, ${data.barangay || 'N/A'}`;
+                    alertDiv.innerHTML = `
+                        <p><strong>${address}</strong> - ${data.emergency_type || 'Not Specified'} at ${displayTime}</p>
+                        <button onclick="respondAlert('${data.timestamp}', ${data.lat || 0}, ${data.lon || 0}, '${data.barangay || 'N/A'}', '${data.emergency_type || 'Not Specified'}')">Respond</button>
+                        ${data.image ? `<img src="data:image/jpeg;base64,${data.image}" width="200"/>` : ''}
+                    `;
+                    feed.prepend(alertDiv);
+                }
 
-        window.respondAlert = function(timestamp, lat, lon, barangay, type) {
-            socket.emit('responded', { timestamp: timestamp, lat: lat, lon: lon, barangay: barangay, emergency_type: type });
-            alert('Response sent for alert at ' + timestamp);
-        };
+                if (data.lat && data.lon) {
+                    L.marker([data.lat, data.lon]).addTo(map).bindPopup(
+                        `${data.emergency_type || 'Alert'} at ${data.barangay || 'Unknown'}`
+                    ).openPopup();
+                }
+            }
 
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.style.display = 'block';
-            setTimeout(() => notification.style.display = 'none', 5000);
-        }
+            function notifyAlert(data) {
+                const notification = document.getElementById('notification');
+                notification.textContent = `New alert (${data.emergency_type || 'Unknown'}) received!`;
+                notification.style.display = 'block';
+                setTimeout(() => notification.style.display = 'none', 5000);
+            }
 
-        updateCharts();
-        updateStats();
-    });
+            window.respondAlert = function(timestamp, lat, lon, barangay, type) {
+                socket.emit('responded', { timestamp, lat, lon, barangay, emergency_type: type });
+                alert('Response sent for alert at ' + timestamp);
+            };
+        });
     </script>
 </body>
 </html>
