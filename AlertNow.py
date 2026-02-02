@@ -103,7 +103,7 @@ from DILGDashboard import (dilg_dashboard, dilg_data, dilg_accounts, dilg_update
                            dilg_delete_all, dilg_warn_account, dilg_barangays, dilg_barangay_report, dilg_cdrrmo_report,
                            dilg_bfp_report, dilg_health_report, dilg_pnp_report)
 
-from submission import (handle_barangay_fire_submitted, handle_barangay_crime_submitted, handle_barangay_health_response,
+from submission import (handle_barangay_response_submitted, handle_barangay_fire_submitted, handle_barangay_crime_submitted, handle_barangay_health_response,
                         handle_cdrrmo_response_submitted, handle_pnp_response_submitted, handle_pnp_fire_submitted,
                         handle_pnp_crime_submitted, handle_fire_response_submitted, handle_health_response, handle_hospital_response)
 
@@ -1122,7 +1122,11 @@ def barangay_sarima_handler(data):
 def barangay_sarimax_handler(data):
     handle_barangay_sarimax_submitted(data)
 '''      
-    
+
+@socketio.on('barangay_response')
+def barangay_arima_handler(data):
+    handle_barangay_response_submitted(data) 
+
 @socketio.on('barangay_fire_submitted')
 def barangay_fire_handler(data):
     handle_barangay_fire_submitted(data)

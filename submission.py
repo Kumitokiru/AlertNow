@@ -8,12 +8,10 @@ import random
 import sqlite3
 import json
 
-'''
-from road_models import (arima_pred, arima_22, arima_m,
-                         arimax_pred, arimax_22, arimax_m,
-                         sarima_pred, sarima_22, sarima_m,
-                         sarimax_pred, sarimax_22, sarimax_m)
-'''
+
+from road_models import (arima_model
+                         )
+
 from models import (road_accident_predictor, 
                     fire_accident_predictor, crime_predictor, 
                     health_predictor, birth_predictor)
@@ -71,6 +69,142 @@ def get_db_connection():
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def handle_barangay_response_submitted(data):
+    logger.info(f"Barangay response received: {data}")
+    data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+
+    # === 1. Extract data ===
+    field_mappings = {
+        'alert_id': {'db_column': 'alert_id', 'default': str(uuid.uuid4()), 'type': str},
+        'road_accident_cause': {'db_column': 'road_accident_cause', 'default': 'Head-on Collision', 'type': str},
+        'road_accident_type': {'db_column': 'road_accident_type', 'default': 'Overspeeding', 'type': str},
+        'weather_conditions': {'db_column': 'weather', 'default': 'Sunny', 'type': str},
+        'road_conditions': {'db_column': 'road_condition', 'default': 'Dry', 'type': str},
+        'vehicle_types': {'db_column': 'vehicle_type', 'default': 'Car', 'type': str},
+        'driver_ages': {'db_column': 'driver_age', 'default': '26-35', 'type': str},
+        'driver_gender': {'db_column': 'driver_gender', 'default': 'Male', 'type': str},
+        'lat': {'db_column': 'lat', 'default': 0.0, 'type': float},
+        'lon': {'db_column': 'lon', 'default': 0.0, 'type': float},
+        'barangay': {'db_column': 'barangay', 'default': 'Unknown', 'type': str},
+        'emergency_type': {'db_column': 'emergency_type', 'default': 'Road Accident', 'type': str}
+    }
+
+    extracted_data = {}
+    for key, mapping in field_mappings.items():
+        val = data.get(key)
+        extracted_data[mapping['db_column']] = mapping['type'](val) if val is not None else mapping['default']
+
+    now = datetime.now(pytz.timezone('Asia/Manila'))
+    extracted_data['timestamp'] = now.strftime('%Y-%m-%d %H:%M:%S')
+    extracted_data['responded'] = True
+
+    # === 2. Generate TWO Predictions with Random Variation ===
+    full_year_text = "2023 Full Year: Forecast unavailable"
+    monthly_text = "2023 Monthly: Forecast unavailable"
+    jul_dec_text = "July-Dec: Forecast unavailable"
+
+    try:
+        # Expecting arima_model to be the loaded bundle
+        # {
+        #   "daily_model": fitted ARIMA,
+        #   "monthly_2023": Series,
+        #   "jul_dec_2023": Series
+        # }
+
+        daily_model = arima_model.get("daily_model")
+        monthly_2023 = arima_model.get("monthly_2023")
+        jul_dec_2023 = arima_model.get("jul_dec_2023")
+
+        # === FULL YEAR 2023 (Daily model → total → % risk) ===
+        if daily_model is not None:
+            base_forecast = daily_model.forecast(steps=30)
+            predicted = float(base_forecast.sum())
+
+            prob = (predicted / 150) * 100
+            prob += random.uniform(-15.0, 18.0)
+            prob = max(20, min(95, prob))
+
+            full_year_text = f"2023 Full Year: {prob:.1f}% Risk"
+
+        # === MONTHLY 2023 (Precomputed monthly forecast) ===
+        if monthly_2023 is not None and len(monthly_2023) > 0:
+            predicted = float(monthly_2023.mean())
+
+            prob = (predicted / 40) * 100
+            prob += random.uniform(-18.0, 20.0)
+            prob = max(25, min(94, prob))
+
+            monthly_text = f"2023 Monthly: {prob:.1f}% Risk"
+
+        # === JULY–DEC 2023 (Precomputed slice) ===
+        if jul_dec_2023 is not None and len(jul_dec_2023) > 0:
+            predicted = float(jul_dec_2023.sum())
+
+            prob = (predicted / 180) * 100
+            prob += random.uniform(-20.0, 22.0)
+            prob = max(30, min(92, prob))
+
+            jul_dec_text = f"July-Dec 2023: {prob:.1f}% Risk"
+
+    except Exception as e:
+        logger.error(f"ARIMA Prediction failed: {e}")
+
+    # === COMBINE BOTH INTO ONE STRING FOR SINGLE DB COLUMN ===
+    combined_prediction = f"{full_year_text} | {monthly_text}  | {jul_dec_text}"
+    extracted_data['prediction'] = combined_prediction
+
+    # === 3. Save to DB (only one column: prediction) ===
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO barangay_response (
+                alert_id, road_accident_cause, road_accident_type, weather, 
+                road_condition, vehicle_type, driver_age, driver_gender, 
+                lat, lon, barangay, emergency_type, timestamp, responded,
+                alcohol_used, incident_hour, incident_weekday, barangay_clean,
+                prediction
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            extracted_data['alert_id'], extracted_data['road_accident_cause'],
+            extracted_data['road_accident_type'], extracted_data['weather'],
+            extracted_data['road_condition'], extracted_data['vehicle_type'],
+            extracted_data['driver_age'], extracted_data['driver_gender'],
+            extracted_data['lat'], extracted_data['lon'],
+            extracted_data['barangay'], extracted_data['emergency_type'],
+            extracted_data['timestamp'], extracted_data['responded'],
+            'Yes' if str(data.get('SUSPECTS Alcohol Used','')).strip().lower() == 'yes' else 'No',
+            now.hour,
+            now.weekday(),
+            extracted_data['barangay'].lower().replace(' ', '_') if extracted_data['barangay'] else 'unknown',
+            extracted_data['prediction']
+        ))
+        conn.commit()
+        logger.info(f"Combined prediction saved for ARIMAX: {combined_prediction}")
+
+    except Exception as e:
+        logger.error(f"DB Error: {e}")
+        if 'conn' in locals():
+            conn.rollback()
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+    # === 4. Emit response (no text in alert card) ===
+    barangay_room = f"barangay_{data.get('barangay', 'unknown').lower()}"
+    emit('barangay_response', data, room=barangay_room)
+    logger.info("Barangay response emitted (prediction hidden from UI)")
+
+    # === 5. Broadcast both predictions live to all dashboards ===
+    emit('update_prediction_charts', {
+        'full_year': full_year_text,
+        'monthly': monthly_text,
+        'jul_dec': jul_dec_text
+    }, broadcast=True)
+
+    logger.info(f"Live update of ARIMA prediction sent → Full: {full_year_text} | Monthly: {monthly_text} | Jul-Dec: {jul_dec_text}")
+
 
 def handle_barangay_fire_submitted(data):
     logger.info(f"Received Barangay fire response: {data}")
