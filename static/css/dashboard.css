@@ -501,7 +501,7 @@ canvas {
     .prediction-charts-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 30px;
+        gap: 1px;
         margin-top: -10px;
         margin: 50px auto;
         max-width: 1700px;
@@ -542,7 +542,7 @@ canvas {
 
     /* If you have multiple prediction grids, reduce the bottom margin of the last one */
     .prediction-charts-grid:last-of-type {
-        margin-bottom: 40px;  /* ← Smaller gap before alerts */
+        margin-bottom: 1px;  /* ← Smaller gap before alerts */
     }
 
     /* Optional: tighter spacing for the entire section */

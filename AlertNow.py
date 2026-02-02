@@ -1295,10 +1295,10 @@ def download_db():
     return send_file(db_path, as_attachment=True, download_name='users_web.db')
 
 
-def construct_unique_id(role, barangay=None, assigned_municipality=None, contact_no=None):
+def construct_unique_id(role, barangay=None, assigned_municipality=None):
     if role == 'barangay':
-        return f"{barangay}_{contact_no}"
-    return f"{role}_{assigned_municipality}_{contact_no}"
+        return f"{barangay}"
+    return f"{role}_{assigned_municipality}"
 
 @app.route('/')
 def home():
@@ -1343,39 +1343,49 @@ def signup_barangay():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     logger.debug("Accessing /login with method: %s", request.method)
+
     if request.method == 'POST':
         barangay = request.form['barangay']
-        contact_no = request.form['contact_no']
         password = request.form['password']
-        unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
-        
+
+        unique_id = construct_unique_id('barangay', barangay=barangay)
+
         conn = get_db_connection()
-        user = conn.execute('''
-            SELECT * FROM users WHERE barangay = ? AND contact_no = ? AND password = ?
-        ''', (barangay, contact_no, password)).fetchone()
+        user = conn.execute(
+            '''
+            SELECT * FROM users 
+            WHERE barangay = ? AND password = ?
+            ''',
+            (barangay, password)
+        ).fetchone()
         conn.close()
-        
-        if user:
-            session['unique_id'] = unique_id
-            session['role'] = user['role']
-            logger.debug(f"Web login successful for barangay: {unique_id}")
-            return redirect(url_for('barangay_dashboard'))
-        logger.warning(f"Web login failed for unique_id: {unique_id}")
-        return "Invalid credentials", 401
+
+        # ✅ SAFETY CHECK (FIXES list index / NoneType ERRORS)
+        if not user:
+            logger.warning(f"Web login failed for unique_id: {unique_id}")
+            return "Invalid credentials", 401
+
+        # ✅ SAFE ACCESS
+        session['unique_id'] = unique_id
+        session['role'] = user['role']
+
+        logger.debug(f"Web login successful for barangay: {unique_id}")
+        return redirect(url_for('barangay_dashboard'))
+
     return render_template('LogInPage.html')
+
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
     barangay = data.get('barangay')
-    contact_no = data.get('contact_no')
     password = data.get('password')
-    unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
+    unique_id = construct_unique_id('barangay', barangay=barangay)
     
     conn = get_db_connection()
     user = conn.execute('''
-        SELECT * FROM users WHERE barangay = ? AND contact_no = ? AND password = ?
-    ''', (barangay, contact_no, password)).fetchone()
+        SELECT * FROM users WHERE barangay = ? AND password = ?
+    ''', (barangay, password)).fetchone()
     conn.close()
     
     if user:
@@ -1525,21 +1535,20 @@ def auto_role():
 def log():
     if request.method == 'POST':
         barangay = request.form['barangay']
-        contact_no = request.form['contact_no']
         password = request.form['password']
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE barangay = ? AND contact_no = ? AND password = ?', (barangay, contact_no, password)).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE barangay = ? AND password = ?', (barangay, password)).fetchone()
         conn.close()
         if user:
             session['role'] = 'barangay'
-            session['unique_id'] = f"barangay_{barangay}_{contact_no}"
+            session['unique_id'] = f"barangay_{barangay}"
             session.permanent = True
             logger.info(f"Web login successful for barangay: {barangay}")
             return redirect(url_for('barangay_dashboard'))
         logger.warning(f"Web login failed for barangay: {barangay}")
         return "Invalid credentials", 401
     conn = get_db_connection()
-    barangay_users = conn.execute('SELECT barangay, contact_no, password FROM users WHERE role = ?', ('barangay',)).fetchall()
+    barangay_users = conn.execute('SELECT barangay, password FROM users WHERE role = ?', ('barangay',)).fetchall()
     logger.debug(f"Retrieved {len(barangay_users)} Barangay users: {[dict(row) for row in barangay_users]}")
     conn.close()
     return render_template('LogInPage.html', barangay_users=barangay_users)
@@ -1792,18 +1801,34 @@ def barangay_dashboard():
     try:
         if 'role' not in session or session['role'] != 'barangay':
             return redirect(url_for('login'))
+
         stats = get_barangay_stats()
         unique_id = session.get('unique_id')
+
+        if not unique_id:
+            logger.warning("Missing unique_id in session")
+            return redirect(url_for('login'))
+
+        # Accept BOTH old and new unique_id formats
+        if '_' in unique_id:
+            barangay_from_id = unique_id.split('_', 1)[1]
+        else:
+            barangay_from_id = unique_id
+
+
         conn = get_db_connection()
-        user = conn.execute('''
-            SELECT * FROM users WHERE barangay = ? AND contact_no = ?
-        ''', (unique_id.split('_')[0], unique_id.split('_')[1])).fetchone()
+        user = conn.execute(
+            '''
+            SELECT * FROM users WHERE barangay = ?
+            ''',
+            (barangay_from_id,)
+        ).fetchone()
         conn.close()
-        
-        if not unique_id or not user or user['role'] != 'barangay':
+
+        if not user or user['role'] != 'barangay':
             logger.warning("Unauthorized access to barangay_dashboard. Session: %s, User: %s", session, user)
             return redirect(url_for('login'))
-        
+
         barangay = user['barangay']
         assigned_municipality = user['assigned_municipality'] or 'San Pablo City'
         latest_alert = get_latest_alert()
@@ -1812,8 +1837,14 @@ def barangay_dashboard():
         new_alert = get_new_alert(barangay)
         responded_count = get_barangay_responded_count(barangay)
 
-        coords = barangay_coords.get(assigned_municipality, {}).get(barangay, {'lat': 14.5995, 'lon': 120.9842})
-        
+        coords = barangay_coords.get(
+            assigned_municipality,
+            {}
+        ).get(
+            barangay,
+            {'lat': 14.5995, 'lon': 120.9842}
+        )
+
         try:
             lat_coord = float(coords.get('lat', 14.5995))
             lon_coord = float(coords.get('lon', 120.9842))
@@ -1823,21 +1854,25 @@ def barangay_dashboard():
             lon_coord = 120.9842
 
         logger.debug(f"Rendering BarangayDashboard for {barangay} in {assigned_municipality}")
-        session['barangay'] = barangay 
-        return render_template('BarangayDashboard.html', 
-                            latest_alert=latest_alert, 
-                            stats=stats, 
-                            responded_count=responded_count,
-                            the_stats=the_stats,
-                            new_alert=new_alert,
-                            barangay=barangay, 
-                            lat_coord=lat_coord, 
-                            lon_coord=lon_coord, 
-                            google_api_key=GOOGLE_API_KEY)
+        session['barangay'] = barangay
+
+        return render_template(
+            'BarangayDashboard.html',
+            latest_alert=latest_alert,
+            stats=stats,
+            responded_count=responded_count,
+            the_stats=the_stats,
+            new_alert=new_alert,
+            barangay=barangay,
+            lat_coord=lat_coord,
+            lon_coord=lon_coord,
+            google_api_key=GOOGLE_API_KEY
+        )
 
     except Exception as e:
         logger.error(f"Error in barangay_dashboard: {e}")
         return "Internal Server Error", 500
+
 
 
 @app.route('/barangay_emergency_types')
