@@ -483,83 +483,67 @@ def handle_submit_response(data):
         barangay = data.get('barangay', '')
         municipality = get_municipality_from_barangay(barangay) or data.get('municipality', '')
         emergency_type = data.get('emergency_type', '')
-        road_accident_cause = data.get('road_accident_cause', '')
-        road_accident_type = data.get('road_accident_type', '')
-        weather = data.get('weather', '')
-        road_condition = data.get('road_condition', '')
-        vehicle_type = data.get('vehicle_type', '')
-        driver_age = data.get('driver_age', '')
-        driver_gender = data.get('driver_gender', '')
-        health_type = data.get('health_type', '')
-        health_cause = data.get('health_cause', '')
-        patient_age = data.get('patient_age', '')
-        patient_gender = data.get('patient_gender', '')
-        lat = data.get('lat', 0.0)
-        lon = data.get('lon', 0.0)
-        timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')  # Changed to string
+        timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
         responded = True
+        
+        # Initialize prediction to avoid UnboundLocalError
+        prediction = "N/A"
 
         conn = get_db_connection()
+
         if role == 'barangay':
             conn.execute('''
                 INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
+            ''', (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded))
             
+            # Insert into Expire Table
+            conn.execute('''INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, barangay, emergency_type, data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+            # Note: Removal from Active Table happens in 'role_accepted', but we can ensure it here too
+            conn.execute('DELETE FROM barangay_alert WHERE alert_id = ?', (alert_id,))
+
         elif role == 'cdrrmo':
             conn.execute('''
                 INSERT INTO cdrrmo_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
+            ''', (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded))
             prediction = handle_cdrrmo_response_submitted(data)
+            
+            # Move to Expire and Delete from Active
+            conn.execute('''INSERT OR REPLACE INTO cdrrmo_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, barangay, municipality, emergency_type, data.get('image'), data.get('lat'), data.get('lon'), str(prediction)))
+            conn.execute('DELETE FROM cdrrmo_alert WHERE alert_id = ?', (alert_id,))
+
         elif role == 'pnp':
             conn.execute('''
                 INSERT INTO pnp_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
+            ''', (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded))
             prediction = handle_pnp_response_submitted(data)
             
-        elif role == 'bfp':
-            pass
-        elif role == 'health':
-            conn.execute('''
-            INSERT INTO health_response (
-                alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''',(alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded))
-            prediction = handle_health_response(data)
-        elif role == 'hospital':
-            conn.execute('''
-            INSERT INTO hospital_response (
-                alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded, assigned_hospital
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''',(alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded, data.get('assigned_hospital')))
-            prediction = handle_hospital_response(data)
-            
-        if role == 'barangay':
-            conn.execute('''INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                            (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), data.get('barangay'), data.get('emergency_type'), timestamp, True))
-            conn.execute('''INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+            # Move to Expire and Delete from Active
+            conn.execute('''INSERT OR REPLACE INTO pnp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, barangay, municipality, emergency_type, data.get('image'), data.get('lat'), data.get('lon'), str(prediction)))
+            conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
 
-        # 2. CDRRMO: Insert into expire and DELETE from Active immediately
-        elif role == 'cdrrmo':
-            conn.execute('''INSERT OR REPLACE INTO cdrrmo_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
-            conn.execute('DELETE FROM cdrrmo_alert WHERE alert_id = ?', (alert_id,))
-
-        # 3. BFP: Insert into expire and DELETE from Active immediately
         elif role == 'bfp':
+            # Assuming bfp_response table exists or logic is handled elsewhere for analytics
+            # Move to Expire and Delete from Active
             conn.execute('''INSERT OR REPLACE INTO bfp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, barangay, municipality, emergency_type, data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
             conn.execute('DELETE FROM bfp_alert WHERE alert_id = ?', (alert_id,))
 
-        # 4. PNP: Insert into expire and DELETE from Active immediately
-        elif role == 'pnp':
-            conn.execute('''INSERT OR REPLACE INTO pnp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
-            conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
+        elif role == 'health':
+            conn.execute('''INSERT INTO health_response (alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, data.get('health_type'), data.get('health_cause'), data.get('weather'), data.get('patient_age'), data.get('patient_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded))
+            prediction = handle_health_response(data)
+
+        elif role == 'hospital':
+            conn.execute('''INSERT INTO hospital_response (alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded, assigned_hospital)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, data.get('health_type'), data.get('health_cause'), data.get('weather'), data.get('patient_age'), data.get('patient_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded, data.get('assigned_hospital')))
+            prediction = handle_hospital_response(data)
+
         conn.commit()
         conn.close()
 
@@ -571,10 +555,11 @@ def handle_submit_response(data):
             'municipality': municipality,
             'emergency_type': emergency_type,
             'prediction': prediction,
-            'timestamp': timestamp  # Using the string timestamp
+            'timestamp': timestamp
         }
         socketio.emit(f'{role}_response', response_data)
         logger.info(f"Response submitted for alert {alert_id} by {role}")
+
     except Exception as e:
         logger.error(f"Error in handle_submit_response: {e}")
 
@@ -772,69 +757,44 @@ def handle_redirect_alert(data):
         municipality = data.get('municipality', '').lower()
         barangay = data.get('barangay', '').lower()
 
-        # Valid roles
         valid_roles = ['bfp', 'cdrrmo', 'pnp', 'health', 'hospital']
-        
         if target_role not in valid_roles:
             logger.error(f"Invalid target role: {target_role}")
             return
-        
-        if target_role == 'barangay':
-             try:
-                conn = get_db_connection()
-                conn.execute('''
-                    INSERT OR IGNORE INTO barangay_alert (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, resident_barangay)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
-                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), 
-                    data.get('barangay')
-                ))
-                conn.commit()
-                conn.close()
-             except Exception as e:
-                logger.error(f"Error persisting redirected alert to barangay: {e}")
+
+        # Initialize connection once to avoid scoping errors
+        conn = get_db_connection()
+        try:
+            # PERSISTENCE: Insert into specific alert tables
+            if target_role == 'barangay':
+                conn.execute('''INSERT OR IGNORE INTO barangay_alert (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, resident_barangay)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                                (data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), data.get('barangay')))
+            
+            elif target_role == 'bfp':
+                conn.execute('''INSERT OR IGNORE INTO bfp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                                (data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')))
+            
+            elif target_role == 'pnp':
+                conn.execute('''INSERT OR IGNORE INTO pnp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                                (data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')))
+            
+            elif target_role == 'cdrrmo':
+                conn.execute('''INSERT OR IGNORE INTO cdrrmo_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                                (data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')))
+            
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Error persisting redirected alert: {e}")
+        finally:
+            conn.close()
 
         # Emit to primary target
         room = f"{target_role}_{municipality}"
         emit('redirected_alert', data, room=room)
-        
-        if target_role == 'bfp':
-            conn.execute('''
-                INSERT OR IGNORE INTO bfp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
-                data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
-            ))
-        elif target_role == 'pnp': # If redirected directly via redirect_alert event (fallback)
-             conn.execute('''
-                INSERT OR IGNORE INTO pnp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
-                data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
-            ))
-        elif target_role == 'cdrrmo':
-             try:
-                conn = get_db_connection()
-                conn.execute('''
-                    INSERT OR IGNORE INTO cdrrmo_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
-                    data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
-                ))
-                conn.commit()
-                conn.close()
-             except Exception as e:
-                logger.error(f"Error persisting redirected alert to cdrrmo: {e}")
-
-        # Emit to primary target
-        room = f"{target_role}_{municipality}"
-        emit('redirected_alert', data, room=room)
-        
-        
 
         # Map update
         map_data = {
@@ -847,33 +807,19 @@ def handle_redirect_alert(data):
         emit('update_map', map_data, room=room)
         logger.info(f"Alert redirected to {room} with map update")
 
-        # === AUTO SEND TO PNP WHEN CDRRMO OR BFP IS CHOSEN ===
+        # Auto send to PNP
         if target_role in ['cdrrmo', 'bfp']:
             pnp_room = f"pnp_{municipality}"
             pnp_data = data.copy()
             pnp_data['target_role'] = 'pnp'
-            
             emit('pnp_redirect_alert', pnp_data, room=pnp_room)
             emit('update_map', map_data, room=pnp_room)
-            emit('update_dashboard_emergency_type', {
-                'alert_id': data.get('alert_id'),
-                'emergency_type': data.get('emergency_type'),
-                'barangay': data.get('barangay'),
-                'municipality': data.get('municipality')
-            }, room=pnp_room)
-            logger.info(f"Auto forwarded to PNP: {pnp_room}")
+            emit('update_dashboard_emergency_type', {'alert_id': data.get('alert_id'), 'emergency_type': data.get('emergency_type'), 'barangay': data.get('barangay'), 'municipality': data.get('municipality')}, room=pnp_room)
 
-        # === CRITICAL: SEND update_dashboard_emergency_type BACK TO BARANGAY ===
-        # This triggers dropdowns on BarangayDashboard after clicking "Send to BFP & PNP"
+        # Trigger Barangay Dropdowns
         if target_role in ['bfp', 'cdrrmo']:
             barangay_room = f"barangay_{barangay}"
-            emit('update_dashboard_emergency_type', {
-                'alert_id': data.get('alert_id'),
-                'emergency_type': data.get('emergency_type'),
-                'barangay': data.get('barangay'),
-                'municipality': data.get('municipality')
-            }, room=barangay_room)
-            logger.info(f"Dropdown trigger sent back to Barangay: {barangay_room}")
+            emit('update_dashboard_emergency_type', {'alert_id': data.get('alert_id'), 'emergency_type': data.get('emergency_type'), 'barangay': data.get('barangay'), 'municipality': data.get('municipality')}, room=barangay_room)
 
     except Exception as e:
         logger.error(f"Error in handle_redirect_alert: {e}")
