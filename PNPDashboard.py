@@ -180,31 +180,3 @@ def get_recent_pnp_officers():
         }
         for r in rows
     ])
-    
-def get_active_pnp_alerts(municipality):
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM pnp_alert 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching active PNP alerts for {municipality}: {e}")
-        return []
-
-def get_expired_pnp_alerts(municipality):
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM pnp_alert_expire 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching expired PNP alerts for {municipality}: {e}")
-        return []

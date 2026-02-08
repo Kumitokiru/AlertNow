@@ -78,9 +78,6 @@
             }
         };
 
-        const persistentActiveAlerts = {{ active_alerts | tojson }};
-        const persistentExpiredAlerts = {{ expired_alerts | tojson }};
-
         // Track alerts
         const liveAlerts = new Map();   // alert_id → { element, timestamp }
         const recentAlerts = new Map();
@@ -187,8 +184,10 @@
             const { element } = liveAlerts.get(alertId);
             liveAlerts.delete(alertId);
             recentAlerts.set(alertId, { element, timestamp: Date.now() });
-            element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
-            document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+            
+            element.querySelector('div:first-child').textContent = 'EXPIRED ALERT';
+            document.getElementById('recent-alert-container')
+                    .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
         }
 
         // Tab switching
@@ -908,24 +907,7 @@
 
             socket.on('update_fire_multi_charts', updateFireCharts);
 
-            if (typeof persistentActiveAlerts !== 'undefined' && Array.isArray(persistentActiveAlerts)) {
-                persistentActiveAlerts.forEach(data => {
-                    data.expired = false;
-                    updateUIWithAlert(data);
-                    if (data.lat && data.lon) {
-                        const marker = L.marker([data.lat, data.lon]).addTo(barangayMap)
-                            .bindPopup(`Emergency at ${data.barangay} Resident from ${data.resident_barangay || data.barangay}`)
-                            .openPopup();
-                        window.activeMarkers[data.alert_id] = marker;
-                    }
-                });
-            }
-
-            if (typeof persistentExpiredAlerts !== 'undefined' && Array.isArray(persistentExpiredAlerts)) {
-                persistentExpiredAlerts.forEach(data => {
-                    renderExpiredAlert(data);
-                });
-            }
+            
 
 
 
@@ -1066,28 +1048,6 @@
                 document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
             });
 
-            function renderExpiredAlert(data) {
-                const container = document.getElementById('recent-alert-container');
-                const alertItem = document.createElement('tr');
-                alertItem.className = 'alert-row';
-                alertItem.id = `alert-${data.alert_id}`;
-                let timeStr = data.timestamp;
-                try { timeStr = new Date(data.timestamp).toLocaleTimeString(); } catch(e){}
-
-                alertItem.innerHTML = `
-                    <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
-                    <td class="time-cell">${timeStr}</td>
-                    <td class="barangay-cell">${data.barangay}</td>
-                    <td class="type-cell">${data.emergency_type || 'Unknown'}</td>
-                    <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
-                    <td class="actions-cell">
-                        <span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>
-                        <div class="prediction-text" style="font-size: 12px; color: black;">Prediction: ${data.prediction || 'N/A'}</div>
-                    </td>
-                `;
-                container.insertBefore(alertItem, container.firstChild);
-            }
-
             function updateUIWithAlert(data) {
                 const isLive = data.expired !== true;
                 const container = isLive 
@@ -1097,9 +1057,6 @@
                 const alertItem = document.createElement('tr');
                 alertItem.className = 'alert-row';
                 alertItem.id = `alert-${data.alert_id}`;
-
-                let displayTime = new Date().toLocaleTimeString();
-                if (data.timestamp) { try { displayTime = new Date(data.timestamp).toLocaleTimeString(); } catch(e){} }
                 
                 alertItem.innerHTML = `
                     <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
@@ -1183,15 +1140,27 @@
 
                 acceptButton.addEventListener('click', () => {
                     socket.emit('role_accepted', { alert_id: data.alert_id, role: 'barangay' });
-                    roleButtonsContainer.style.display = 'flex'; roleButtonsContainer.style.gap = '5px'; roleButtonsContainer.style.flexWrap = 'wrap';
-                    acceptButton.style.display = 'none'; declineButton.style.display = 'none';
+                    roleButtonsContainer.style.display = 'flex';
+                    roleButtonsContainer.style.gap = '5px';
+                    roleButtonsContainer.style.flexWrap = 'wrap';
+                    acceptButton.style.display = 'none';
+                    declineButton.style.display = 'none';
+
                     liveAlerts.set(data.alert_id, { element: alertItem });
+                    setTimeout(() => moveToRecent(data.alert_id), 60000);
                 });
 
                 declineButton.addEventListener('click', () => {
                     socket.emit('role_declined', { alert_id: data.alert_id, role: 'barangay' });
-                    if (window.activeMarkers[data.alert_id]) { window.activeMarkers[data.alert_id].remove(); delete window.activeMarkers[data.alert_id]; }
-                    liveAlerts.delete(data.alert_id); recentAlerts.delete(data.alert_id); alertElements.delete(data.alert_id);
+
+                    if (window.activeMarkers[data.alert_id]) {
+                        window.activeMarkers[data.alert_id].remove();
+                        delete window.activeMarkers[data.alert_id];
+                    }
+
+                    liveAlerts.delete(data.alert_id);
+                    recentAlerts.delete(data.alert_id);
+                    alertElements.delete(data.alert_id);
                     alertItem.remove();
                 });
 
@@ -1371,22 +1340,17 @@
                 const submitBtn = document.createElement('button');
                 submitBtn.textContent = 'Submit';
                 submitBtn.className = 'alert-button alert-button-submit';
-                
                 submitBtn.onclick = () => {
                     const formData = {
                         alert_id: data.alert_id,
                         emergency_type: emergencyType,
-                        barangay: '{{ barangay }}',
-                        role: 'barangay',
-                        image: data.image,
-                        lat: data.lat,
-                        lon: data.lon,
-                        timestamp: data.timestamp
+                        barangay: '{{ barangay }}'
                     };
 
                     if (emergencyType === 'Road Accident') {
                         const combinedCT = form.querySelector('select[name="combined_cause_type"]').value;
                         const combinedWR = form.querySelector('select[name="combined_weather_road"]').value;
+                        
                         if (combinedCT) {
                             const [cause, type] = combinedCT.split(', ');
                             formData['road_accident_cause'] = cause;
@@ -1397,6 +1361,7 @@
                             formData['weather'] = weather;
                             formData['road_condition'] = road;
                         }
+                        
                         form.querySelectorAll('select').forEach(s => {
                             if (s.name !== 'combined_cause_type' && s.name !== 'combined_weather_road') {
                                 formData[s.name] = s.value;
@@ -1414,14 +1379,14 @@
                         'Crime Incident': 'barangay_crime_submitted',
                         'Health Emergency': 'barangay_health_response'
                     };
+                    socket.emit(eventMap[emergencyType] || 'barangay_response', formData);
                     
-                    // 1. Emit specific event for analytics/prediction generation
-                    socket.emit('submit_response', formData); // Backend moves to Expire
                     container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
                     const row = container.closest('tr');
                     if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-                    
-                    setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 SECONDS
+
+
+                    setTimeout(() => moveToRecent(data.alert_id), 60000);
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

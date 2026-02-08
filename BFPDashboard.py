@@ -147,31 +147,3 @@ def get_recent_bfp_officers():
         }
         for r in rows
     ])
-    
-def get_active_bfp_alerts(municipality):
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM bfp_alert 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching active BFP alerts for {municipality}: {e}")
-        return []
-
-def get_expired_bfp_alerts(municipality):
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM bfp_alert_expire 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching expired BFP alerts for {municipality}: {e}")
-        return []

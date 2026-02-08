@@ -99,62 +99,21 @@ h3 {
     text-align: center;
     height: 73%;
     margin-left: 1683px;
-    
-    /* TRANSPARENT BACKGROUND */
-    /* 0.6 is the opacity (0 is invisible, 1 is solid). Adjust as needed. */
-    background-color: rgba(214, 213, 213, 0.6); 
-    backdrop-filter: blur(5px); /* Optional: Adds a nice blur effect behind it */
-    
+    background-color: #d6d5d5;
     color: #000000;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     top: 0px;
-
-    /* MAKE IT SCROLLABLE */
-    overflow-y: auto;
-    overflow-x: hidden;
-
-    /* Custom Scrollbar Styling (Firefox) */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
 }
 
-/* Custom Scrollbar Styling (Chrome, Edge, Safari) */
-.sidebar2::-webkit-scrollbar {
-    width: 5px; /* Thin scrollbar */
-}
-
-.sidebar2::-webkit-scrollbar-track {
-    background: transparent; /* Track is invisible */
-}
-
-.sidebar2::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.4); /* Dark semi-transparent handle */
-    border-radius: 10px; /* Rounded corners */
-}
-
-.sidebar2::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.7); /* Darker on hover */
-}
-
-/* HEADERS & ITEMS */
 .sidebar2 h6 {
     font-size: 16px;
     margin-bottom: 10px;
     color: #000000;
-    
-    /* Keeps the title fixed at the top while scrolling */
-    position: sticky;
-    top: 0;
-    background-color: rgba(214, 213, 213, 0.9); /* Slightly more solid so text doesn't overlap */
-    z-index: 10;
-    padding-top: 15px;
-    margin-top: 0;
-    padding-bottom: 10px;
 }
 
 .officer-item {
     padding: 10px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3); /* Fainter border for transparent look */
+    border-bottom: 1px solid #000000;
 }
 
 .officer-date {

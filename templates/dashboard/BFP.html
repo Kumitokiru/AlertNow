@@ -49,8 +49,6 @@ function updateTotalIncidents() {
         counterElement.textContent = totalIncidents;
     }
 }
-        const persistentActiveAlerts = {{ active_alerts | tojson }};
-        const persistentExpiredAlerts = {{ expired_alerts | tojson }};
 
 // --- OFFICER LOGIC ---
 function setOfficer() {
@@ -129,8 +127,11 @@ function moveToRecent(alertId) {
     const { element } = liveAlerts.get(alertId);
     liveAlerts.delete(alertId);
     recentAlerts.set(alertId, { element, timestamp: Date.now() });
+
     element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
-    document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+    
+    document.getElementById('recent-alert-container')
+        .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
 }
 
 // --- CHARTS LOGIC ---
@@ -641,25 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (typeof persistentActiveAlerts !== 'undefined' && Array.isArray(persistentActiveAlerts)) {
-        persistentActiveAlerts.forEach(data => {
-            data.expired = false;
-            updateUIWithAlert(data);
-            if (data.lat && data.lon) {
-                const marker = L.marker([data.lat, data.lon]).addTo(bfpMap)
-                    .bindPopup(`Fire Incident at ${data.barangay}`)
-                    .openPopup();
-                window.activeMarkers[data.alert_id] = marker;
-            }
-        });
-    }
-
-    if (typeof persistentExpiredAlerts !== 'undefined' && Array.isArray(persistentExpiredAlerts)) {
-        persistentExpiredAlerts.forEach(data => {
-            renderExpiredAlert(data);
-        });
-    }
-
     socket.on('update_alerts_per_month', (data) => {
         alertsPerMonthChart.data.datasets[0].data = Object.values(data);
         alertsPerMonthChart.update();
@@ -695,28 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
     });
 
-    function renderExpiredAlert(data) {
-        const container = document.getElementById('recent-alert-container');
-        const alertItem = document.createElement('tr');
-        alertItem.className = 'alert-row';
-        alertItem.id = `alert-${data.alert_id}`;
-        let timeStr = data.timestamp;
-        try { timeStr = new Date(data.timestamp).toLocaleTimeString(); } catch(e){}
-
-        alertItem.innerHTML = `
-            <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
-            <td class="time-cell">${timeStr}</td>
-            <td class="barangay-cell">${data.barangay}</td>
-            <td class="type-cell">${data.emergency_type || 'Unknown'}</td>
-            <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
-            <td class="actions-cell">
-                <span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>
-                <div class="prediction-text" style="font-size: 12px; color: black;">Prediction: ${data.prediction || 'N/A'}</div>
-            </td>
-        `;
-        container.insertBefore(alertItem, container.firstChild);
-    }
-
     // --- TABLE ROW CREATION LOGIC (UPDATED for BFP) ---
     function updateUIWithAlert(data) {
         const isLive = data.expired !== true;
@@ -727,9 +687,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const alertItem = document.createElement('tr');
         alertItem.className = 'alert-row';
         alertItem.id = `alert-${data.alert_id}`;
-
-        let displayTime = new Date().toLocaleTimeString();
-        if (data.timestamp) { try { displayTime = new Date(data.timestamp).toLocaleTimeString(); } catch(e){} }
 
         alertItem.innerHTML = `
             <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
@@ -825,21 +782,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 lat: data.lat,
                 lon: data.lon,
                 barangay: data.barangay,
-                image: data.image,
                 emergency_type: 'Fire Incident',
-                municipality: '{{ municipality }}'.toLowerCase(),
-                timestamp: data.timestamp
+                municipality: '{{ municipality }}'.toLowerCase()
             };
-            form.querySelectorAll('select').forEach(s => formData[s.name] = s.value);
+
+            form.querySelectorAll('select').forEach(s => {
+                formData[s.name] = s.value;
+            });
 
             socket.emit('fire_response_submitted', formData);
-            socket.emit('submit_response', formData); // Triggers immediate DB delete from bfp_alert
 
             container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
             const row = container.closest('tr');
-            if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-            
-            setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 SECONDS
+            if(row) {
+                row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+                
+                const predictionSpan = document.createElement('div');
+                predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
+                predictionSpan.className = 'prediction-text';
+                predictionSpan.style.fontSize = '12px';
+                predictionSpan.style.color = 'black';
+                container.appendChild(predictionSpan);
+            }
+
+            setTimeout(() => moveToRecent(data.alert_id), 60000);
         };
         form.appendChild(submitBtn);
         container.appendChild(form);

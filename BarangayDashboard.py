@@ -180,33 +180,3 @@ def get_recent_officers():
         }
         for r in rows
     ])
-    
-def get_active_barangay_alerts(barangay):
-    """Fetches alerts that are currently displayed in the Live Alerts table."""
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM barangay_alert 
-            WHERE barangay = ? 
-            ORDER BY timestamp DESC
-        ''', (barangay,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching active alerts: {e}")
-        return []
-
-def get_expired_barangay_alerts(barangay):
-    """Fetches alerts that have been submitted/expired for the Recent Alerts table."""
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM barangay_alert_expire 
-            WHERE barangay = ? 
-            ORDER BY timestamp DESC
-        ''', (barangay,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching expired alerts: {e}")
-        return []

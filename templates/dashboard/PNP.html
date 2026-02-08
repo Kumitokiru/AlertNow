@@ -757,8 +757,7 @@
 
             initializeCharts();
 
-        const persistentActiveAlerts = {{ active_alerts | tojson }};
-        const persistentExpiredAlerts = {{ expired_alerts | tojson }};
+        
 
         const liveAlerts = new Map();
         const recentAlerts = new Map();
@@ -769,8 +768,13 @@
             const { element } = liveAlerts.get(alertId);
             liveAlerts.delete(alertId);
             recentAlerts.set(alertId, { element, timestamp: Date.now() });
-            element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
-            document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+
+            const statusDiv = element.querySelector('.alert-status');
+            statusDiv.textContent = 'EXPIRED ALERT';
+            statusDiv.className = 'alert-status status-expired';
+
+            document.getElementById('recent-alert-container')
+                    .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
         }
 
         document.querySelectorAll('.alert-tab').forEach(tab => {
@@ -955,25 +959,6 @@
                 }
             }
 
-            if (typeof persistentActiveAlerts !== 'undefined' && Array.isArray(persistentActiveAlerts)) {
-                persistentActiveAlerts.forEach(data => {
-                    data.expired = false;
-                    updateUIWithAlert(data);
-                    if (data.lat && data.lon) {
-                        const marker = L.marker([data.lat, data.lon]).addTo(pnpMap)
-                            .bindPopup(`${data.emergency_type} at ${data.barangay}`)
-                            .openPopup();
-                        window.activeMarkers[data.alert_id] = marker;
-                    }
-                });
-            }
-
-            if (typeof persistentExpiredAlerts !== 'undefined' && Array.isArray(persistentExpiredAlerts)) {
-                persistentExpiredAlerts.forEach(data => {
-                    renderExpiredAlert(data);
-                });
-            }
-
             socket.on('connect', () => {
                 socket.emit('register_role', { role: 'pnp', municipality: '{{ municipality }}'.toLowerCase() });
             });
@@ -1017,28 +1002,6 @@
                 }
             }
 
-            function renderExpiredAlert(data) {
-                const container = document.getElementById('recent-alert-container');
-                const alertItem = document.createElement('tr');
-                alertItem.className = 'alert-row';
-                alertItem.id = `alert-${data.alert_id}`;
-                let timeStr = data.timestamp;
-                try { timeStr = new Date(data.timestamp).toLocaleTimeString(); } catch(e){}
-
-                alertItem.innerHTML = `
-                    <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
-                    <td class="time-cell">${timeStr}</td>
-                    <td class="barangay-cell">${data.barangay}</td>
-                    <td class="type-cell">${data.emergency_type || 'Unknown'}</td>
-                    <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
-                    <td class="actions-cell">
-                        <span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>
-                        <div class="prediction-text" style="font-size: 12px; color: black;">Prediction: ${data.prediction || 'N/A'}</div>
-                    </td>
-                `;
-                container.insertBefore(alertItem, container.firstChild);
-            }
-
             function updateUIWithAlert(data) {
                 const isLive = data.expired !== true;
                 const container = isLive
@@ -1048,9 +1011,6 @@
                 const alertItem = document.createElement('tr');
                 alertItem.className = 'alert-row';
                 alertItem.id = `alert-${data.alert_id}`;
-
-                let displayTime = new Date().toLocaleTimeString();
-                if (data.timestamp) { try { displayTime = new Date(data.timestamp).toLocaleTimeString(); } catch(e){} }
 
                 alertItem.innerHTML = `
                     <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
@@ -1194,14 +1154,14 @@
                         lat: data.lat,
                         lon: data.lon,
                         barangay: data.barangay,
-                        image: data.image,
                         emergency_type: emergencyType,
-                        municipality: '{{ municipality }}'.toLowerCase(),
-                        timestamp: data.timestamp
+                        municipality: '{{ municipality }}'.toLowerCase()
                     };
+
                     if (emergencyType === 'Road Accident') {
                         const combinedCT = form.querySelector('select[name="combined_cause_type"]').value;
                         const combinedWR = form.querySelector('select[name="combined_weather_road"]').value;
+
                         if (combinedCT) {
                             const [cause, type] = combinedCT.split(', ');
                             formData['road_accident_cause'] = cause;
@@ -1213,25 +1173,31 @@
                             formData['road_condition'] = road;
                         }
                     }
+
                     form.querySelectorAll('select').forEach(s => {
                         if (s.name !== 'combined_cause_type' && s.name !== 'combined_weather_road') {
                             formData[s.name] = s.value;
                         }
                     });
 
-                    // 1. Emit specific event
                     if (emergencyType === 'Road Accident') socket.emit('pnp_response', formData);
                     else if (emergencyType === 'Fire Incident') socket.emit('pnp_fire_submitted', formData);
                     else if (emergencyType === 'Crime Incident') socket.emit('pnp_crime_submitted', formData);
 
-                    // 2. Emit 'submit_response' for DATABASE PERSISTENCE
-                    socket.emit('submit_response', formData); // Triggers immediate DB delete from pnp_alert
-
                     container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
                     const row = container.closest('tr');
-                    if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+                    if(row) {
+                        row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+                        
+                        const predictionSpan = document.createElement('div');
+                        predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
+                        predictionSpan.className = 'prediction-text';
+                        predictionSpan.style.fontSize = '12px';
+                        predictionSpan.style.color = 'black';
+                        container.appendChild(predictionSpan);
+                    }
 
-                    setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 SECONDS
+                    setTimeout(() => moveToRecent(data.alert_id), 60000);
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

@@ -159,33 +159,3 @@ def get_recent_cdrrmo_officers():
         }
         for r in rows
     ])
-    
-def get_active_cdrrmo_alerts(municipality):
-    """Fetches alerts that are currently displayed in the Live Alerts table."""
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM cdrrmo_alert 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching active alerts for {municipality}: {e}")
-        return []
-
-def get_expired_cdrrmo_alerts(municipality):
-    """Fetches alerts that have been submitted/expired for the Recent Alerts table."""
-    try:
-        conn = get_db_connection()
-        rows = conn.execute('''
-            SELECT * FROM cdrrmo_alert_expire 
-            WHERE municipality = ? 
-            ORDER BY timestamp DESC
-        ''', (municipality,)).fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        logger.error(f"Error fetching expired alerts for {municipality}: {e}")
-        return []
