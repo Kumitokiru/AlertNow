@@ -543,6 +543,8 @@ def handle_submit_response(data):
             conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
 
         elif role == 'bfp':
+            
+            prediction = handle_fire_response_submitted(data)
             # Persistence for BFP (Analytics might be handled elsewhere or passed, ensuring DB consistency)
             conn.execute('''INSERT OR REPLACE INTO bfp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, barangay, municipality, emergency_type, data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
