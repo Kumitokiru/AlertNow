@@ -505,19 +505,7 @@ def handle_submit_response(data):
                 INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
-            try:
-                # 1. Insert into Expire Table
-                conn.execute('''
-                    INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    alert_id, 'RESPONDED', timestamp, barangay, emergency_type, 
-                    data.get('image'), lat, lon, "Calculating..." # Prediction will be updated later or passed here if available
-                ))
-                # 2. Delete from Active Table
-                conn.execute('DELETE FROM barangay_alert WHERE alert_id = ?', (alert_id,))
-            except Exception as e:
-                logger.error(f"Error moving barangay alert to expired table: {e}")
+            
         elif role == 'cdrrmo':
             conn.execute('''
                 INSERT INTO cdrrmo_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
@@ -530,29 +518,9 @@ def handle_submit_response(data):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
             prediction = handle_pnp_response_submitted(data)
-            try:
-                conn.execute('''
-                    INSERT OR REPLACE INTO pnp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), 
-                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."
-                ))
-                conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
-            except Exception as e:
-                logger.error(f"Error moving pnp alert to expired table: {e}")
+            
         elif role == 'bfp':
-            try:
-                conn.execute('''
-                    INSERT OR REPLACE INTO bfp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), 
-                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."
-                ))
-                conn.execute('DELETE FROM bfp_alert WHERE alert_id = ?', (alert_id,))
-            except Exception as e:
-                logger.error(f"Error moving bfp alert to expired table: {e}")
+            pass
         elif role == 'health':
             conn.execute('''
             INSERT INTO health_response (
@@ -567,6 +535,31 @@ def handle_submit_response(data):
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''',(alert_id, health_type, health_cause, weather, patient_age, patient_gender, lat, lon, barangay, emergency_type, timestamp, responded, data.get('assigned_hospital')))
             prediction = handle_hospital_response(data)
+            
+        if role == 'barangay':
+            conn.execute('''INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                            (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), data.get('barangay'), data.get('emergency_type'), timestamp, True))
+            conn.execute('''INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+
+        # 2. CDRRMO: Insert into expire and DELETE from Active immediately
+        elif role == 'cdrrmo':
+            conn.execute('''INSERT OR REPLACE INTO cdrrmo_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+            conn.execute('DELETE FROM cdrrmo_alert WHERE alert_id = ?', (alert_id,))
+
+        # 3. BFP: Insert into expire and DELETE from Active immediately
+        elif role == 'bfp':
+            conn.execute('''INSERT OR REPLACE INTO bfp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+            conn.execute('DELETE FROM bfp_alert WHERE alert_id = ?', (alert_id,))
+
+        # 4. PNP: Insert into expire and DELETE from Active immediately
+        elif role == 'pnp':
+            conn.execute('''INSERT OR REPLACE INTO pnp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."))
+            conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
         conn.commit()
         conn.close()
 
@@ -740,6 +733,16 @@ def role_accepted(data):
                 logger.info(f"Forwarded alert {alert_id} to {namespace}")
     except Exception as e:
         logger.error(f"Error in role_accepted: {e}")
+    if role == 'barangay':
+        try:
+            conn = get_db_connection()
+            conn.execute('DELETE FROM barangay_alert WHERE alert_id = ?', (alert_id,))
+            conn.commit()
+            conn.close()
+            logger.info(f"Alert {alert_id} removed from barangay_alert table (Accepted).")
+        except Exception as e:
+            logger.error(f"Error deleting from barangay_alert on accept: {e}")
+    emit('role_accepted_update', data, broadcast=True)
 
 @socketio.on('role_declined')
 def role_declined(data):

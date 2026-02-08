@@ -117,10 +117,8 @@
             const { element } = liveAlerts.get(alertId);
             liveAlerts.delete(alertId);
             recentAlerts.set(alertId, { element, timestamp: Date.now() });
-            
-            element.querySelector('div:first-child').textContent = 'EXPIRED ALERT';
-            document.getElementById('recent-alert-container')
-                    .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+            element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+            document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
         }
 
         
@@ -550,7 +548,6 @@
                 const alertItem = document.createElement('tr');
                 alertItem.className = 'alert-row';
                 alertItem.id = `alert-${data.alert_id}`;
-
                 let timeStr = data.timestamp;
                 try { timeStr = new Date(data.timestamp).toLocaleTimeString(); } catch(e){}
 
@@ -558,7 +555,7 @@
                     <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
                     <td class="time-cell">${timeStr}</td>
                     <td class="barangay-cell">${data.barangay}</td>
-                    <td class="type-cell">${data.emergency_type || 'Road Accident'}</td>
+                    <td class="type-cell">${data.emergency_type || 'Unknown'}</td>
                     <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
                     <td class="actions-cell">
                         <span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>
@@ -728,6 +725,7 @@
                         lat: data.lat,
                         lon: data.lon,
                         barangay: data.barangay,
+                        image: data.image,
                         emergency_type: 'Road Accident',
                         municipality: '{{ municipality }}'.toLowerCase(),
                         timestamp: data.timestamp
@@ -753,23 +751,15 @@
                         }
                     });
 
+                    // 1. Emit specific event
                     socket.emit('cdrrmo_response', formData);
+                    socket.emit('submit_response', formData); // Triggers immediate DB delete from cdrrmo_alert
 
                     container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
                     const row = container.closest('tr');
-                    if(row) {
-                        row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-                        
-                        // Show prediction in actions cell
-                        const predictionSpan = document.createElement('div');
-                        predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
-                        predictionSpan.className = 'prediction-text';
-                        predictionSpan.style.fontSize = '12px';
-                        predictionSpan.style.color = 'black';
-                        container.appendChild(predictionSpan);
-                    }
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
 
+                    setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 SECONDS
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

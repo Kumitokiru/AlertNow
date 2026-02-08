@@ -187,10 +187,8 @@
             const { element } = liveAlerts.get(alertId);
             liveAlerts.delete(alertId);
             recentAlerts.set(alertId, { element, timestamp: Date.now() });
-            
-            element.querySelector('div:first-child').textContent = 'EXPIRED ALERT';
-            document.getElementById('recent-alert-container')
-                    .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+            element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+            document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
         }
 
         // Tab switching
@@ -912,12 +910,8 @@
 
             if (typeof persistentActiveAlerts !== 'undefined' && Array.isArray(persistentActiveAlerts)) {
                 persistentActiveAlerts.forEach(data => {
-                    // Treat as new alert but data comes from DB
-                    // Ensure status is pending
                     data.expired = false;
                     updateUIWithAlert(data);
-                    
-                    // Add marker for persisted active alert
                     if (data.lat && data.lon) {
                         const marker = L.marker([data.lat, data.lon]).addTo(barangayMap)
                             .bindPopup(`Emergency at ${data.barangay} Resident from ${data.resident_barangay || data.barangay}`)
@@ -929,7 +923,6 @@
 
             if (typeof persistentExpiredAlerts !== 'undefined' && Array.isArray(persistentExpiredAlerts)) {
                 persistentExpiredAlerts.forEach(data => {
-                    // Render directly to recent tab
                     renderExpiredAlert(data);
                 });
             }
@@ -1078,8 +1071,6 @@
                 const alertItem = document.createElement('tr');
                 alertItem.className = 'alert-row';
                 alertItem.id = `alert-${data.alert_id}`;
-
-                // Format time safely
                 let timeStr = data.timestamp;
                 try { timeStr = new Date(data.timestamp).toLocaleTimeString(); } catch(e){}
 
@@ -1380,18 +1371,22 @@
                 const submitBtn = document.createElement('button');
                 submitBtn.textContent = 'Submit';
                 submitBtn.className = 'alert-button alert-button-submit';
+                
                 submitBtn.onclick = () => {
                     const formData = {
                         alert_id: data.alert_id,
                         emergency_type: emergencyType,
                         barangay: '{{ barangay }}',
+                        role: 'barangay',
+                        image: data.image,
+                        lat: data.lat,
+                        lon: data.lon,
                         timestamp: data.timestamp
                     };
 
                     if (emergencyType === 'Road Accident') {
                         const combinedCT = form.querySelector('select[name="combined_cause_type"]').value;
                         const combinedWR = form.querySelector('select[name="combined_weather_road"]').value;
-                        
                         if (combinedCT) {
                             const [cause, type] = combinedCT.split(', ');
                             formData['road_accident_cause'] = cause;
@@ -1402,7 +1397,6 @@
                             formData['weather'] = weather;
                             formData['road_condition'] = road;
                         }
-                        
                         form.querySelectorAll('select').forEach(s => {
                             if (s.name !== 'combined_cause_type' && s.name !== 'combined_weather_road') {
                                 formData[s.name] = s.value;
@@ -1420,14 +1414,14 @@
                         'Crime Incident': 'barangay_crime_submitted',
                         'Health Emergency': 'barangay_health_response'
                     };
-                    socket.emit(eventMap[emergencyType] || 'barangay_response', formData);
                     
+                    // 1. Emit specific event for analytics/prediction generation
+                    socket.emit('submit_response', formData); // Backend moves to Expire
                     container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
                     const row = container.closest('tr');
                     if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-
-
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    
+                    setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 SECONDS
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);
