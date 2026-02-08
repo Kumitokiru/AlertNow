@@ -483,7 +483,20 @@ def handle_submit_response(data):
         barangay = data.get('barangay', '')
         municipality = get_municipality_from_barangay(barangay) or data.get('municipality', '')
         emergency_type = data.get('emergency_type', '')
-        timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+        road_accident_cause = data.get('road_accident_cause', '')
+        road_accident_type = data.get('road_accident_type', '')
+        weather = data.get('weather', '')
+        road_condition = data.get('road_condition', '')
+        vehicle_type = data.get('vehicle_type', '')
+        driver_age = data.get('driver_age', '')
+        driver_gender = data.get('driver_gender', '')
+        health_type = data.get('health_type', '')
+        health_cause = data.get('health_cause', '')
+        patient_age = data.get('patient_age', '')
+        patient_gender = data.get('patient_gender', '')
+        lat = data.get('lat', 0.0)
+        lon = data.get('lon', 0.0)
+        timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')  # Changed to string
         responded = True
         
         # FIX 1: Initialize prediction with a default value to prevent UnboundLocalError
@@ -497,6 +510,8 @@ def handle_submit_response(data):
                 INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert_id, data.get('road_accident_cause'), data.get('road_accident_type'), data.get('weather'), data.get('road_condition'), data.get('vehicle_type'), data.get('driver_age'), data.get('driver_gender'), data.get('lat'), data.get('lon'), barangay, emergency_type, timestamp, responded))
+            
+            prediction = handle_barangay_response_submitted(data)
             
             # Persistence: Move to Expire, Delete from Active
             conn.execute('''INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
