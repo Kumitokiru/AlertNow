@@ -159,3 +159,32 @@ def get_recent_cdrrmo_officers():
         }
         for r in rows
     ])
+    
+def handle_load_cdrrmo_alerts():
+    conn = get_db_connection()
+    rows = conn.execute("""
+        SELECT * FROM cdrrmo_alert WHERE status = 'PENDING'
+        ORDER BY time DESC
+    """).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def handle_cdrrmo_alert_expire(alert_id):
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT INTO cdrrmo_alert_expire
+        SELECT * FROM cdrrmo_alert WHERE alert_id = ?
+    """, (alert_id,))
+    conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
+    conn.commit()
+    conn.close()
+
+def handle_alert_expiration(alert_id, table_name):
+    conn = get_db_connection()
+    conn.execute(f'''
+        UPDATE cdrrmo_alert
+        SET status = 'EXPIRED'
+        WHERE alert_id = ?
+    ''', (alert_id,))
+    conn.commit()
+    conn.close()

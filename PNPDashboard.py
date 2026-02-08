@@ -180,3 +180,32 @@ def get_recent_pnp_officers():
         }
         for r in rows
     ])
+    
+def handle_load_pnp_alerts():
+    conn = get_db_connection()
+    rows = conn.execute("""
+        SELECT * FROM pnp_alert WHERE status = 'PENDING'
+        ORDER BY time DESC
+    """).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def handle_pnp_alert_expire(alert_id):
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT INTO pnp_alert_expire
+        SELECT * FROM pnp_alert WHERE alert_id = ?
+    """, (alert_id,))
+    conn.execute("DELETE FROM pnp_alert WHERE alert_id = ?", (alert_id,))
+    conn.commit()
+    conn.close()
+    
+def handle_alert_expiration(alert_id, table_name):
+    conn = get_db_connection()
+    conn.execute(f'''
+        UPDATE pnp_alert
+        SET status = 'EXPIRED'
+        WHERE alert_id = ?
+    ''', (alert_id,))
+    conn.commit()
+    conn.close()

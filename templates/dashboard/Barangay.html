@@ -85,6 +85,20 @@
 
         window.activeMarkers = window.activeMarkers || {};
 
+        function expireAlert(rowId) {
+            setTimeout(() => {
+                const row = document.getElementById(rowId);
+                if (row) {
+                    document.getElementById('recentAlertsTable').appendChild(row);
+                }
+            }, 30000); // 30 seconds
+        }
+
+        fetch('/load_barangay_alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                alerts.forEach(alert => addLiveAlert(alert));
+            });
 
         function setOfficer() {
             const position = document.getElementById('officerPosition').value;
@@ -1147,7 +1161,7 @@
                     declineButton.style.display = 'none';
 
                     liveAlerts.set(data.alert_id, { element: alertItem });
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    setTimeout(() => moveToRecent(data.alert_id), 30000);
                 });
 
                 declineButton.addEventListener('click', () => {
@@ -1386,7 +1400,7 @@
                     if(row) row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
 
 
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    setTimeout(() => moveToRecent(data.alert_id), 30000);
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

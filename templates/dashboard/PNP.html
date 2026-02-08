@@ -89,6 +89,21 @@
             }
         };
 
+        fetch('/load_pnp_alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                alerts.forEach(alert => addLiveAlert(alert));
+            });
+
+        function expireAlert(rowId) {
+            setTimeout(() => {
+                const row = document.getElementById(rowId);
+                if (row) {
+                    document.getElementById('recentAlertsTable').appendChild(row);
+                }
+            }, 30000); // 30 seconds
+        }    
+
         // ROAD ACCIDENT CHARTS
             let yearlyPredictionChart = null;
             let monthlyComparisonChart = null;
@@ -1032,7 +1047,7 @@
                 
                 updateTotalIncidents();
                 
-                const timer = setTimeout(() => moveToRecent(data.alert_id), 60000);
+                const timer = setTimeout(() => moveToRecent(data.alert_id), 30000);
                 liveAlerts.set(data.alert_id, { element: alertItem, timer });
             }
 
@@ -1197,7 +1212,7 @@
                         container.appendChild(predictionSpan);
                     }
 
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    setTimeout(() => moveToRecent(data.alert_id), 30000);
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

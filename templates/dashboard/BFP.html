@@ -37,6 +37,22 @@ let menuData = {
 };
 
 window.activeMarkers = window.activeMarkers || {};
+
+function expireAlert(rowId) {
+    setTimeout(() => {
+        const row = document.getElementById(rowId);
+        if (row) {
+            document.getElementById('recentAlertsTable').appendChild(row);
+        }
+    }, 30000); // 30 seconds
+}
+
+fetch('/load_bfp_alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                alerts.forEach(alert => addLiveAlert(alert));
+            });
+
 let totalIncidents = 0;
 const liveAlerts = new Map();
 const recentAlerts = new Map();
@@ -708,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateTotalIncidents();
         
-        const timer = setTimeout(() => moveToRecent(data.alert_id), 60000);
+        const timer = setTimeout(() => moveToRecent(data.alert_id), 30000);
         liveAlerts.set(data.alert_id, { element: alertItem, timer });
     }
 
@@ -805,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(predictionSpan);
             }
 
-            setTimeout(() => moveToRecent(data.alert_id), 60000);
+            setTimeout(() => moveToRecent(data.alert_id), 30000);
         };
         form.appendChild(submitBtn);
         container.appendChild(form);

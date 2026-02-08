@@ -180,3 +180,47 @@ def get_recent_officers():
         }
         for r in rows
     ])
+    
+def handle_store_forwarded_alert(role, alert):
+    conn = get_db_connection()
+    table = f"{role}_alert"
+    conn.execute(f"""
+        INSERT OR IGNORE INTO {table}
+        (alert_id, status, time, barangay, type, image)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        alert['alert_id'],
+        'PENDING',
+        alert['timestamp'],
+        alert.get('barangay'),
+        alert.get('emergency_type'),
+        alert.get('image', '')
+    ))
+    conn.commit()
+    conn.close()
+    
+def handle_load_barangay_alerts(barangay):
+    conn = get_db_connection()
+    rows = conn.execute("""
+        SELECT * FROM barangay_alert
+        WHERE barangay = ? AND status = 'PENDING'
+        ORDER BY time DESC
+    """, (barangay,)).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def handle_barangay_alert_expire(alert_id):
+    conn = get_db_connection()
+    alert = conn.execute(
+        "SELECT * FROM barangay_alert WHERE alert_id = ?", (alert_id,)
+    ).fetchone()
+
+    if alert:
+        conn.execute("""
+            INSERT INTO barangay_alert_expire
+            SELECT * FROM barangay_alert WHERE alert_id = ?
+        """, (alert_id,))
+        conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
+
+    conn.commit()
+    conn.close()

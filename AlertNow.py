@@ -210,6 +210,21 @@ def handle_new_alert(data):
         emit('update_map', map_data, room=barangay_room)
     except Exception as e:
         logger.error(f"Error handling alert: {e}")
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT OR IGNORE INTO barangay_alert
+        (alert_id, status, time, barangay, type, image)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        alert_id,
+        'PENDING',
+        data['timestamp'],
+        data.get('barangay'),
+        data.get('emergency_type'),
+        data.get('image', '')
+    ))
+    conn.commit()
+    conn.close()
 
 @socketio.on('forward_alert')
 def handle_forward_alert(data):
@@ -2645,6 +2660,93 @@ if __name__ == '__main__':
                 created_at TEXT
             );
         ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS barangay_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS barangay_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS cdrrmo_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS cdrrmo_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bfp_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bfp_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS pnp_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS pnp_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT,
+                time TEXT,
+                barangay TEXT,
+                type TEXT,
+                image TEXT
+            );
+            ''')
+
+
+
+
+
+
+
         conn.commit()
         conn.close()
         logger.info("barangay_response initialized successfully in users_web.db")

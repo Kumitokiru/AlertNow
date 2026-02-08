@@ -41,6 +41,16 @@
                 counterElement.textContent = totalIncidents;
             }
         }
+
+        function expireAlert(rowId) {
+            setTimeout(() => {
+                const row = document.getElementById(rowId);
+                if (row) {
+                    document.getElementById('recentAlertsTable').appendChild(row);
+                }
+            }, 30000); // 30 seconds
+        }
+        
         document.querySelectorAll('.alert-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
@@ -49,6 +59,12 @@
                 document.getElementById(tab.dataset.tab + '-alerts-tab').classList.add('active');
             });
         });
+
+        fetch('/load_cdrrmo_alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                alerts.forEach(alert => addLiveAlert(alert));
+            });
 
         function setOfficer() {
             const name = document.getElementById('officerName').value.trim();
@@ -717,7 +733,7 @@
                         predictionSpan.style.color = 'black';
                         container.appendChild(predictionSpan);
                     }
-                    setTimeout(() => moveToRecent(data.alert_id), 60000);
+                    setTimeout(() => moveToRecent(data.alert_id), 30000);
 
                 };
                 form.appendChild(submitBtn);
