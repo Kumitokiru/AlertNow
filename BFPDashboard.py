@@ -1,5 +1,7 @@
 from alert_data import alerts
-
+from flask import request, jsonify, session
+from datetime import datetime
+import pytz
 from collections import Counter
 import logging
 import sqlite3
@@ -106,3 +108,70 @@ def get_heatmap_data(municipality):
     conn.close()
     return [{'lat': row[0], 'lon': row[1]} for row in data]
 
+def save_bfp_officer():
+    data = request.get_json()
+    municipality = session.get('municipality')
+    position = data.get('position')
+    name = data.get('name')
+    timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO bfp_officer (municipality, position, name, created_at) VALUES (?, ?, ?, ?)',
+        (municipality, position, name, timestamp)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+def get_recent_bfp_officers():
+    municipality = session.get('municipality')
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT position, name, created_at 
+        FROM bfp_officer 
+        WHERE municipality = ? 
+        ORDER BY datetime(created_at) DESC 
+        LIMIT 20
+        ''',
+        (municipality,)
+    ).fetchall()
+    conn.close()
+    
+    return jsonify([
+        {
+            'name': f"{r['position']} {r['name']}",
+            'date': datetime.strptime(r['created_at'], '%Y-%m-%d %H:%M:%S')
+                            .strftime('%B %d, %Y')
+        }
+        for r in rows
+    ])
+    
+def get_active_bfp_alerts(municipality):
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM bfp_alert 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching active BFP alerts for {municipality}: {e}")
+        return []
+
+def get_expired_bfp_alerts(municipality):
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM bfp_alert_expire 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching expired BFP alerts for {municipality}: {e}")
+        return []

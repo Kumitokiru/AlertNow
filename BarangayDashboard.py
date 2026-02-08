@@ -1,3 +1,6 @@
+from flask import request, jsonify, session
+from datetime import datetime, timedelta
+import pytz
 from alert_data import alerts
 from collections import Counter
 import logging
@@ -133,3 +136,77 @@ def get_heatmap_data(barangay):
     conn.close()
     return [{'lat': row[0], 'lon': row[1]} for row in data]
 
+
+def save_officer():
+    data = request.get_json()
+
+    barangay = session.get('barangay')
+    position = data.get('position')
+    name = data.get('name')
+
+    timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO officer (barangay, position, name, created_at) VALUES (?, ?, ?, ?)',
+        (barangay, position, name, timestamp)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+def get_recent_officers():
+    barangay = session.get('barangay')
+
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT name, created_at
+        FROM officer
+        WHERE barangay = ?
+        ORDER BY datetime(created_at) DESC
+        LIMIT 20
+        ''',
+        (barangay,)
+    ).fetchall()
+    conn.close()
+
+    return jsonify([
+        {
+            'name': r['name'],
+            'date': datetime.strptime(r['created_at'], '%Y-%m-%d %H:%M:%S')
+                    .strftime('%B %d, %Y')
+        }
+        for r in rows
+    ])
+    
+def get_active_barangay_alerts(barangay):
+    """Fetches alerts that are currently displayed in the Live Alerts table."""
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM barangay_alert 
+            WHERE barangay = ? 
+            ORDER BY timestamp DESC
+        ''', (barangay,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching active alerts: {e}")
+        return []
+
+def get_expired_barangay_alerts(barangay):
+    """Fetches alerts that have been submitted/expired for the Recent Alerts table."""
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM barangay_alert_expire 
+            WHERE barangay = ? 
+            ORDER BY timestamp DESC
+        ''', (barangay,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching expired alerts: {e}")
+        return []

@@ -1,3 +1,7 @@
+from flask import request, jsonify, session
+from datetime import datetime
+import pytz
+
 from alert_data import alerts
 from collections import Counter
 
@@ -117,3 +121,71 @@ def get_heatmap_data(municipality):
     conn.close()
     return [{'lat': row[0], 'lon': row[1]} for row in data]
 
+def save_cdrrmo_officer():
+    data = request.get_json()
+    municipality = session.get('municipality')
+    name = data.get('name')
+    timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO cdrrmo_officer (municipality, name, created_at) VALUES (?, ?, ?)',
+        (municipality, name, timestamp)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+def get_recent_cdrrmo_officers():
+    municipality = session.get('municipality')
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT name, created_at 
+        FROM cdrrmo_officer 
+        WHERE municipality = ? 
+        ORDER BY datetime(created_at) DESC 
+        LIMIT 20
+        ''',
+        (municipality,)
+    ).fetchall()
+    conn.close()
+    
+    return jsonify([
+        {
+            'name': r['name'],
+            'date': datetime.strptime(r['created_at'], '%Y-%m-%d %H:%M:%S')
+                            .strftime('%B %d, %Y')
+        }
+        for r in rows
+    ])
+    
+def get_active_cdrrmo_alerts(municipality):
+    """Fetches alerts that are currently displayed in the Live Alerts table."""
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM cdrrmo_alert 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching active alerts for {municipality}: {e}")
+        return []
+
+def get_expired_cdrrmo_alerts(municipality):
+    """Fetches alerts that have been submitted/expired for the Recent Alerts table."""
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM cdrrmo_alert_expire 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching expired alerts for {municipality}: {e}")
+        return []

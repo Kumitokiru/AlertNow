@@ -14,135 +14,265 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
     <script src="{{ url_for('static', filename='js/test_socket.js') }}"></script>
     <style>
-        .alert-item { 
-            font-size: 18px; 
-            margin-bottom: 6px; 
-            padding: 15px; 
-            border-radius: 10px; 
-            color: #000000; 
-            background-color: #ffffff; 
-            border: 1px solid #000000; 
-            width: 360px;  
-            border-left: 4px solid #3498db;
-        }
-        .alert-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 360px);    /* Exactly 5 cards per row */
-            grid-auto-rows: minmax(280px, auto);
-            gap: 30px;
-            padding: 20px;
-            overflow-x: auto;         
-            margin-right: -250px;                  /* Horizontal scroll */
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            width: 110%;
-            max-width: 150vw;
-        }
-
-        .alert-grid::-webkit-scrollbar {
-            height: 10px;
-            display: none;  
-        }
-        .alert-grid::-webkit-scrollbar-track {
-            
-            display: none;  
-        }
-        .alert-grid::-webkit-scrollbar-thumb {
-            display: none;  
-        }
-
-        .alert-item {
-            scroll-snap-align: start;
-            min-width: 360px;
-            max-width: 360px;
-            height: fit-content;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .notification { 
-            position: fixed; 
-            width: 50px; 
-            bottom: 10px; 
-            right: 10px; 
-        }
-        .response-form { 
-            margin-top: 10px; 
-            display: none; 
-        }
-        .response-form select, 
-        .response-form button { 
-            margin: 5px; 
-            padding: 5px; 
-            border-radius: 4px; 
-        }
-        .clickable-img { 
-            cursor: pointer; 
-            max-width: 100%; 
-            height: auto; 
-            border-radius: 5px; 
-        }
-        .prediction { 
-            margin-top: 10px; 
-            font-weight: bold; 
-            color: #000; 
-            display: none; 
-        }
-        
-        .image-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* TABLE STYLING FOR ALERTS - SCROLLABLE */
+        /* TABLE STYLING FOR ALERTS - WITH VISIBLE LINES */
+        .alert-table {
             width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .image-modal img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 5px;
-        }
-        .image-modal .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: #fff;
-            font-size: 30px;
-            cursor: pointer;
+            border-collapse: collapse; /* Ensures lines stay together */
+            background-color: #fff;
+            border-radius: 8px;
+            margin-top: 10px;
+            overflow: visible;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #bdc3c7; /* Outer border for the whole table */
         }
 
-        /* Tabs Styling */
-        .alert-tabs {
-            display: flex;
-            background: #fff;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-            width: fit-content;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .alert-tab {
-            padding: 14px 32px;
-            cursor: pointer;
+        .alert-table thead {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
             font-weight: bold;
-            color: #333;
+            text-align: left;
+            position: sticky;
+            margin-top: 10px;
+            z-index: 10;
+        }
+
+        .alert-table th {
+            padding: 15px;
+            font-size: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid #000000; /* Lines between header cells */
+        }
+
+        .alert-table tbody tr {
+            transition: background-color 0.3s ease;
+        }
+
+        .alert-table tbody tr:hover {
+            background-color: #f5f7fa;
+        }
+
+        .alert-table td {
+            padding: 12px 15px;
+            font-size: 20px;
+            color: #2c3e50;
+            word-wrap: break-word;
+            border: 3px solid #000000; /* Horizontal and Vertical lines for all cells */
+        }
+
+        /* Optional: Make the Status column slightly more prominent with a border */
+        .status-cell {
+            font-weight: 600;
+            min-width: 90px;
+            border-right: 2px solid #ecf0f1;
+        }
+
+        /* Optional: Differentiate the action cell area */
+        .actions-cell {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            min-width: 350px;
+            align-items: center;
+            border-left: 1px solid #ecf0f1;
+        }
+
+        .time-cell {
+            min-width: 110px;
+            font-weight: 500;
+        }
+
+        .barangay-cell {
+            min-width: 120px;
+            font-weight: 500;
+        }
+
+        .type-cell {
+            min-width: 140px;
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .image-cell {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .alert-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: transform 0.2s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .alert-thumbnail:hover {
+            transform: scale(1.05);
+        }
+
+
+        .alert-button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
             transition: all 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
-        .alert-tab:hover {
-            background: #f0f0f0;
-        }
-        .alert-tab.active {
-            background: #3498db;
+
+        .alert-button-accept {
+            background-color: #27ae60;
             color: white;
         }
-        .tab-content {
-            display: none;
+
+        .alert-button-accept:hover {
+            background-color: #229954;
+            box-shadow: 0 2px 6px rgba(39,174,96,0.3);
         }
-        .tab-content.active {
-            display: block;
+
+        .alert-button-decline {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .alert-button-decline:hover {
+            background-color: #c0392b;
+            box-shadow: 0 2px 6px rgba(231,76,60,0.3);
+        }
+
+        .alert-button-role {
+            background-color: #3498db;
+            color: white;
+            padding: 5px 10px;
+            font-size: 15px;
+        }
+
+        .alert-button-role:hover {
+            background-color: #2980b9;
+            box-shadow: 0 2px 6px rgba(52,152,219,0.3);
+        }
+
+        .alert-button-submit {
+            background-color: #f39c12;
+            color: white;
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        .alert-button-submit:hover {
+            background-color: #d68910;
+            box-shadow: 0 2px 6px rgba(243,156,18,0.3);
+        }
+
+        .role-buttons-container {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .response-form-inline {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .dropdown-emergency {
+            padding: 5px 8px;
+            width: 50%;
+            display: flex;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 15px;
+            background-color: #fff;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            flex-shrink: 0;
+        }
+
+        .dropdown-emergency:hover {
+            border-color: #3498db;
+        }
+
+        .dropdown-emergency:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 4px rgba(52,152,219,0.3);
+        }
+
+        /* EXPIRED AND RESPONDED STATUS STYLING */
+        .status-pending {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .status-responded {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-expired {
+            color: #95a5a6;
+            font-weight: bold;
+        }
+
+        /* CONTAINER STYLING - SCROLLABLE */
+        #live-alert-container,
+        #recent-alert-container {
+            min-height: 200px;
+            padding: 0;
+            overflow: visible;
+        }
+
+        .alert-table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .alert-table-wrapper::-webkit-scrollbar {
+            height: 12px;
+            width: 12px;
+        }
+
+        .alert-table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .alert-table-wrapper::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        .alert-table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+
+        /* Firefox Scrollbar */
+        .alert-table-wrapper {
+            scrollbar-color: #3498db #f1f1f1;
+            scrollbar-width: thin;
+        }
+
+        .alert-table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
         }
         .date-filter-container {
             margin: 15px 0;
@@ -154,11 +284,6 @@
             border: 1px solid #ccc;
             font-size: 16px;
         }
-        #live-alert-container,
-        #recent-alert-container {
-            min-height: 320px;
-            padding-bottom: 20px;
-        }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.7); }
             70% { box-shadow: 0 0 0 15px rgba(255,0,0,0); }
@@ -167,8 +292,8 @@
         .prediction-charts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);  /* ← 3 charts per row */
+            margin-right: -300px;
             gap: 1px;
-            margin: 1px auto;
             max-width: 1800px;
             padding: 0 30px;
         }
@@ -176,7 +301,7 @@
         .chart-box {
             border-radius: 20px;
             padding: 30px;
-            height: 480px;
+            height: 500px;
             display: flex;
             flex-direction: column;
         }
@@ -211,7 +336,7 @@
             }
         }
         #alerts {
-            margin-top: 40px;  /* ← Was probably too large before */
+            margin-top: 20px;  /* ← Was probably too large before */
         }
 
         /* If you have multiple prediction grids, reduce the bottom margin of the last one */
@@ -234,6 +359,7 @@
             width: 100% !important;
             height: 100% !important;
             flex-grow: 1;
+            
         }
     </style>
 </head>
@@ -264,6 +390,20 @@
         </header>
     </div>
 
+    <div id="officerModal" class="officer-modal-overlay">
+        <div class="officer-modal-content">
+            <h3>Who's In Charge Today?</h3>
+            <select id="officerPosition">
+                <option value="" disabled selected>Select Position</option>
+                {% for position in positions %}
+                <option value="{{ position }}">{{ position }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" id="officerName" placeholder="Enter Name" autocomplete="off">
+            <button onclick="setOfficer()">OK</button>
+        </div>
+    </div>
+
     <main class="main-content" id="mainContent">
         <h2 class="h2" style="position: relative; display: inline-block; margin: 0 auto;">Barangay {{ barangay }} Map </h2>
         <p class="p" style="position: relative; display: inline-block; margin: 0 auto;">
@@ -273,14 +413,17 @@
         <div class="dashboard-container">
             <div id="map"></div>
 
-
+            <div class="sidebar2" id="sidebar2">
+                    <h6>Recent Officer In Charge</h6>
+                    <div id="officerList"></div>
+                </div>
 
             
             <section class="stats">
                 <div class="stats-row">
                     <div class="stat-item">
                         <p class="p" style="position: relative; display: inline-block; margin: 0 auto;">
-                            Total Incidents: 
+                            Total Incidents 
                             <span id="total-incidents" class="incident-number">
                                 {{ stats.total() if stats else 0 }}
                             </span>
@@ -288,7 +431,7 @@
                     </div>
                     <div class="stat-item">
                         <p class="p" style="position: relative; display: inline-block; margin: 0 auto;">
-                            Responded: 
+                            Responded 
                             <span id="responded-count" class="incident-number">
                                 {{ responded_count if responded_count else 0 }}
                             </span>
@@ -345,7 +488,22 @@
 
             <!-- Live Alerts -->
             <div id="live-alerts-tab" class="tab-content active">
-                <div id="live-alert-container" class="alert-grid"></div>
+                <div class="alert-table-wrapper">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Barangay</th>
+                                <th>Type</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="live-alert-container">
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Recent Alerts -->
@@ -354,7 +512,22 @@
                     <label for="recent-date-filter">Filter by Date: </label>
                     <input type="date" id="recent-date-filter">
                 </div>
-                <div id="recent-alert-container" class="alert-grid"></div>
+                <div class="alert-table-wrapper">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Barangay</th>
+                                <th>Type</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-alert-container">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

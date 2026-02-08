@@ -55,16 +55,20 @@ from SignUpType import download_apk_folder, generate_qr
 
 from BarangayDashboard import (get_barangay_stats, get_latest_alert, get_the_stats, get_new_alert, 
                                
-                               get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update)
+                               get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
+                               save_officer, get_recent_officers, get_active_barangay_alerts, get_expired_barangay_alerts)
 
 from CDRRMODashboard import (get_cdrrmo_stats, get_latest_alert, get_the_cdrrmo_stats, get_cdrrmo_new_alert, 
-                             get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update)
+                             get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
+                             save_cdrrmo_officer, get_recent_cdrrmo_officers, get_active_cdrrmo_alerts, get_expired_cdrrmo_alerts)
 
 from PNPDashboard import (get_pnp_stats, get_latest_alert, get_the_pnp_stats, get_pnp_new_alert, get_pnp_alerts_per_month, 
-                          get_pnp_responded_count, emit_pnp_alerts_per_month_update)
+                          get_pnp_responded_count, emit_pnp_alerts_per_month_update,
+                          save_pnp_officer, get_recent_pnp_officers, get_active_pnp_alerts, get_expired_pnp_alerts)
 
 from BFPDashboard import (get_bfp_stats, get_latest_alert, get_the_stat_bfp, get_bfp_alerts_per_month, 
-                          get_bfp_responded_count, emit_bfp_alerts_per_month_update)
+                          get_bfp_responded_count, emit_bfp_alerts_per_month_update, 
+                          save_bfp_officer, get_recent_bfp_officers, get_active_bfp_alerts, get_expired_bfp_alerts)
 
 from HealthDashboard import get_health_stats, get_latest_alert
 
@@ -191,6 +195,21 @@ def handle_new_alert(data):
         data['resident_barangay'] = data.get('barangay', 'Unknown')
 
         alerts.append(data)
+        
+        try:
+            conn = get_db_connection()
+            conn.execute('''
+                INSERT OR IGNORE INTO barangay_alert (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, resident_barangay)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data['alert_id'], 'PENDING', data['timestamp'], data.get('barangay'), 
+                data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), 
+                data.get('resident_barangay')
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Error persisting new alert: {e}")
 
         barangay_room = f"barangay_{data.get('barangay').lower() if data.get('barangay') else ''}"
         emit('new_alert', data, room=barangay_room)
@@ -486,6 +505,19 @@ def handle_submit_response(data):
                 INSERT INTO barangay_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
+            try:
+                # 1. Insert into Expire Table
+                conn.execute('''
+                    INSERT OR REPLACE INTO barangay_alert_expire (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, prediction)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    alert_id, 'RESPONDED', timestamp, barangay, emergency_type, 
+                    data.get('image'), lat, lon, "Calculating..." # Prediction will be updated later or passed here if available
+                ))
+                # 2. Delete from Active Table
+                conn.execute('DELETE FROM barangay_alert WHERE alert_id = ?', (alert_id,))
+            except Exception as e:
+                logger.error(f"Error moving barangay alert to expired table: {e}")
         elif role == 'cdrrmo':
             conn.execute('''
                 INSERT INTO cdrrmo_response (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded)
@@ -498,9 +530,29 @@ def handle_submit_response(data):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert_id, road_accident_cause, road_accident_type, weather, road_condition, vehicle_type, driver_age, driver_gender, lat, lon, barangay, emergency_type, timestamp, responded))
             prediction = handle_pnp_response_submitted(data)
+            try:
+                conn.execute('''
+                    INSERT OR REPLACE INTO pnp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), 
+                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."
+                ))
+                conn.execute('DELETE FROM pnp_alert WHERE alert_id = ?', (alert_id,))
+            except Exception as e:
+                logger.error(f"Error moving pnp alert to expired table: {e}")
         elif role == 'bfp':
-            # Existing BFP logic remains unchanged
-            pass
+            try:
+                conn.execute('''
+                    INSERT OR REPLACE INTO bfp_alert_expire (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon, prediction)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    alert_id, 'RESPONDED', timestamp, data.get('barangay'), data.get('municipality'), 
+                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), "Calculating..."
+                ))
+                conn.execute('DELETE FROM bfp_alert WHERE alert_id = ?', (alert_id,))
+            except Exception as e:
+                logger.error(f"Error moving bfp alert to expired table: {e}")
         elif role == 'health':
             conn.execute('''
             INSERT INTO health_response (
@@ -700,6 +752,14 @@ def role_declined(data):
             logger.info(f"Removed {role} from accepted roles for alert {alert_id}")
     except Exception as e:
         logger.error(f"Error in role_declined: {e}")
+    if data['role'].lower() == 'barangay':
+        try:
+            conn = get_db_connection()
+            conn.execute('DELETE FROM barangay_alert WHERE alert_id = ?', (data['alert_id'],))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Error deleting declined alert from DB: {e}")
 
 @socketio.on('redirect_alert')
 def handle_redirect_alert(data):
@@ -715,10 +775,63 @@ def handle_redirect_alert(data):
         if target_role not in valid_roles:
             logger.error(f"Invalid target role: {target_role}")
             return
+        
+        if target_role == 'barangay':
+             try:
+                conn = get_db_connection()
+                conn.execute('''
+                    INSERT OR IGNORE INTO barangay_alert (alert_id, status, timestamp, barangay, emergency_type, image, lat, lon, resident_barangay)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
+                    data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon'), 
+                    data.get('barangay')
+                ))
+                conn.commit()
+                conn.close()
+             except Exception as e:
+                logger.error(f"Error persisting redirected alert to barangay: {e}")
 
         # Emit to primary target
         room = f"{target_role}_{municipality}"
         emit('redirected_alert', data, room=room)
+        
+        if target_role == 'bfp':
+            conn.execute('''
+                INSERT OR IGNORE INTO bfp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
+                data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
+            ))
+        elif target_role == 'pnp': # If redirected directly via redirect_alert event (fallback)
+             conn.execute('''
+                INSERT OR IGNORE INTO pnp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
+                data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
+            ))
+        elif target_role == 'cdrrmo':
+             try:
+                conn = get_db_connection()
+                conn.execute('''
+                    INSERT OR IGNORE INTO cdrrmo_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    data.get('alert_id'), 'PENDING', datetime.now().isoformat(), data.get('barangay'), 
+                    data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
+                ))
+                conn.commit()
+                conn.close()
+             except Exception as e:
+                logger.error(f"Error persisting redirected alert to cdrrmo: {e}")
+
+        # Emit to primary target
+        room = f"{target_role}_{municipality}"
+        emit('redirected_alert', data, room=room)
+        
+        
 
         # Map update
         map_data = {
@@ -790,6 +903,20 @@ def handle_pnp_redirect_alert(data):
         logger.error(f"Error storing PNP alert: {e}")
     finally:
         conn.close()
+        
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT OR IGNORE INTO pnp_alert (alert_id, status, timestamp, barangay, municipality, emergency_type, image, lat, lon)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data.get('alert_id'), 'PENDING', data.get('timestamp'), data.get('barangay'), 
+            data.get('municipality'), data.get('emergency_type'), data.get('image'), data.get('lat'), data.get('lon')
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error persisting pnp_redirect_alert: {e}")
 
     # Emit to PNP room
     pnp_room = f"pnp_{data.get('municipality', '').lower()}"
@@ -1856,6 +1983,11 @@ def barangay_dashboard():
         logger.debug(f"Rendering BarangayDashboard for {barangay} in {assigned_municipality}")
         session['barangay'] = barangay
 
+        positions = ["Barangay Captain", "Barangay Secretary", "Barangay Treasurer", "Barangay Tanod", "BHW", "BBDRRMO"]
+        
+        active_alerts = get_active_barangay_alerts(barangay)
+        expired_alerts = get_expired_barangay_alerts(barangay)
+
         return render_template(
             'BarangayDashboard.html',
             latest_alert=latest_alert,
@@ -1866,7 +1998,12 @@ def barangay_dashboard():
             barangay=barangay,
             lat_coord=lat_coord,
             lon_coord=lon_coord,
-            google_api_key=GOOGLE_API_KEY
+            google_api_key=GOOGLE_API_KEY,
+            positions=positions,
+            active_alerts=active_alerts,   # Pass to template
+            expired_alerts=expired_alerts,
+            official_position=session.get('official_position'),
+            official_name=session.get('official_name')
         )
 
     except Exception as e:
@@ -1933,6 +2070,10 @@ def cdrrmo_dashboard():
 
         alerts_per_month = get_cdrrmo_alerts_per_month()
         logger.debug(f"Rendering CDRRMODashboard for {assigned_municipality}")
+        
+        active_alerts = get_active_cdrrmo_alerts(assigned_municipality)
+        expired_alerts = get_expired_cdrrmo_alerts(assigned_municipality)
+        
         return render_template('CDRRMODashboard.html', 
                                stats=stats, 
                                municipality=assigned_municipality, 
@@ -1941,7 +2082,9 @@ def cdrrmo_dashboard():
                                alerts_per_month=alerts_per_month,
                                lat_coord=lat_coord, 
                                lon_coord=lon_coord, 
-                               google_api_key=GOOGLE_API_KEY)
+                               google_api_key=GOOGLE_API_KEY,
+                               active_alerts=active_alerts,   # Inject active alerts
+                                expired_alerts=expired_alerts)
     except Exception as e:
         logger.error(f"Error in cdrrmo_dashboard: {e}")
         return "Internal Server Error", 500
@@ -1986,6 +2129,10 @@ def pnp_dashboard():
 
         alerts_per_month = get_pnp_alerts_per_month()
         logger.debug(f"Rendering PNPDashboard for {assigned_municipality}")
+        
+        active_alerts = get_active_pnp_alerts(assigned_municipality)
+        expired_alerts = get_expired_pnp_alerts(assigned_municipality)
+        
         return render_template('PNPDashboard.html', 
                                stats=stats, 
                                municipality=assigned_municipality, 
@@ -1994,7 +2141,9 @@ def pnp_dashboard():
                                alerts_per_month=alerts_per_month,
                                lat_coord=lat_coord, 
                                lon_coord=lon_coord, 
-                               google_api_key=GOOGLE_API_KEY)
+                               google_api_key=GOOGLE_API_KEY,
+                               active_alerts=active_alerts,   # Inject active
+                                expired_alerts=expired_alerts)
     except Exception as e:
         logger.error(f"Error in pnp_dashboard: {e}")
         return "Internal Server Error", 500
@@ -2037,6 +2186,10 @@ def bfp_dashboard():
 
         alerts_per_month = get_bfp_alerts_per_month()
         logger.debug(f"Rendering BFPDashboard for {assigned_municipality}")
+        
+        active_alerts = get_active_bfp_alerts(assigned_municipality)
+        expired_alerts = get_expired_bfp_alerts(assigned_municipality)
+        
         return render_template('BFPDashboard.html', 
                                stats=stats, 
                                bfp_stats=bfp_stats,
@@ -2045,7 +2198,9 @@ def bfp_dashboard():
                                alerts_per_month=alerts_per_month,
                                lat_coord=lat_coord,
                                lon_coord=lon_coord,
-                               google_api_key=GOOGLE_API_KEY)
+                               google_api_key=GOOGLE_API_KEY,
+                               active_alerts=active_alerts,   # Inject active
+                                expired_alerts=expired_alerts)
     except Exception as e:
         logger.error(f"Error in bfp_dashboard: {e}")
         return "Internal Server Error", 500
@@ -2273,6 +2428,39 @@ def get_hospital_stats():
     except Exception as e:
         logger.error(f"Error in get_hospital_stats: {e}")
         return Counter()
+    
+@app.route('/save_officer', methods=['POST'])
+def save_officer_handler():
+    return save_officer()
+
+@app.route('/get_recent_officers')
+def get_recent_officers_handler():
+    return get_recent_officers()
+
+@app.route('/save_cdrrmo_officer', methods=['POST'])
+def save_cdrrmo_officer_handler():
+    return save_cdrrmo_officer()
+
+@app.route('/get_recent_cdrrmo_officers')
+def get_recent_cdrrmo_officers_handler():
+    return get_recent_cdrrmo_officers()
+
+@app.route('/save_bfp_officer', methods=['POST'])
+def save_bfp_officer_handler():
+    return save_bfp_officer()
+
+@app.route('/get_recent_bfp_officers')
+def get_recent_bfp_officers_handler():
+    return get_recent_bfp_officers()
+
+
+@app.route('/save_pnp_officer', methods=['POST'])
+def save_pnp_officer_handler():
+    return save_pnp_officer()
+
+@app.route('/get_recent_pnp_officers')
+def get_recent_pnp_officers_handler():
+    return get_recent_pnp_officers()
 
 app.route('/barangay_charts')(barangay_charts)
 app.route('/barangay_charts_data')(barangay_charts_data)
@@ -2567,6 +2755,151 @@ if __name__ == '__main__':
                 image TEXT,
                 FOREIGN KEY (alert_id, barangay) REFERENCES alerts (alert_id, barangay)
             )
+        ''')
+        c.execute('''
+                  CREATE TABLE IF NOT EXISTS officer (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    barangay TEXT,
+                    position TEXT,
+                    name TEXT,
+                    created_at TEXT
+                );
+            ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS cdrrmo_officer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                municipality TEXT,
+                name TEXT,
+                created_at TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bfp_officer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                municipality TEXT,
+                position TEXT,
+                name TEXT,
+                created_at TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS pnp_officer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                municipality TEXT,
+                position TEXT,
+                name TEXT,
+                created_at TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS barangay_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'PENDING',
+                timestamp TEXT,
+                barangay TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL,
+                resident_barangay TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS barangay_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'RESPONDED',
+                timestamp TEXT,
+                barangay TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL,
+                resident_barangay TEXT,
+                prediction TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS cdrrmo_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'PENDING',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS cdrrmo_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'RESPONDED',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL,
+                prediction TEXT
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bfp_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'PENDING',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bfp_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'RESPONDED',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL,
+                prediction TEXT
+            );
+        ''')
+
+        # ADDED: PNP Alert Persistence Tables
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS pnp_alert (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'PENDING',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS pnp_alert_expire (
+                alert_id TEXT PRIMARY KEY,
+                status TEXT DEFAULT 'RESPONDED',
+                timestamp TEXT,
+                barangay TEXT,
+                municipality TEXT,
+                emergency_type TEXT,
+                image TEXT,
+                lat REAL,
+                lon REAL,
+                prediction TEXT
+            );
         ''')
         conn.commit()
         conn.close()

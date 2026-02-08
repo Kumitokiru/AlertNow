@@ -1,6 +1,8 @@
 from alert_data import alerts
 from collections import Counter
-
+from flask import request, jsonify, session
+from datetime import datetime
+import pytz
 import logging
 import sqlite3
 import os
@@ -139,3 +141,70 @@ def get_heatmap_data(municipality):
     return [{'lat': row[0], 'lon': row[1]} for row in data]
 
 # Add this near the existing socketio event definitions (e.g., after @socketio.on('alert'))
+def save_pnp_officer():
+    data = request.get_json()
+    municipality = session.get('municipality')
+    position = data.get('position')
+    name = data.get('name')
+    timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO pnp_officer (municipality, position, name, created_at) VALUES (?, ?, ?, ?)',
+        (municipality, position, name, timestamp)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+def get_recent_pnp_officers():
+    municipality = session.get('municipality')
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT position, name, created_at 
+        FROM pnp_officer 
+        WHERE municipality = ? 
+        ORDER BY datetime(created_at) DESC 
+        LIMIT 20
+        ''',
+        (municipality,)
+    ).fetchall()
+    conn.close()
+    
+    return jsonify([
+        {
+            'name': f"{r['position']} {r['name']}",
+            'date': datetime.strptime(r['created_at'], '%Y-%m-%d %H:%M:%S')
+                            .strftime('%B %d, %Y')
+        }
+        for r in rows
+    ])
+    
+def get_active_pnp_alerts(municipality):
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM pnp_alert 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching active PNP alerts for {municipality}: {e}")
+        return []
+
+def get_expired_pnp_alerts(municipality):
+    try:
+        conn = get_db_connection()
+        rows = conn.execute('''
+            SELECT * FROM pnp_alert_expire 
+            WHERE municipality = ? 
+            ORDER BY timestamp DESC
+        ''', (municipality,)).fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error fetching expired PNP alerts for {municipality}: {e}")
+        return []

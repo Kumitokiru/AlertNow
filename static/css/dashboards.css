@@ -204,28 +204,303 @@ main {
     border-radius: 20px; 
 }
 
-/* Stats section */
+.alert-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 10px;
+    overflow: visible;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #bdc3c7;
+}
+.alert-table thead {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    font-weight: bold;
+    text-align: left;
+    position: sticky;
+    margin-top: 10px;
+    z-index: 10;
+}
+.alert-table th {
+    padding: 15px;
+    font-size: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #000000;
+}
+.alert-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+.alert-table tbody tr:hover {
+    background-color: #f5f7fa;
+}
+.alert-table td {
+    padding: 12px 15px;
+    font-size: 20px;
+    color: #2c3e50;
+    word-wrap: break-word;
+    border: 3px solid #000000;
+}
+.status-cell {
+    font-weight: 600;
+    min-width: 90px;
+    border-right: 2px solid #ecf0f1;
+}
+.actions-cell {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-width: 350px;
+    align-items: center;
+    border-left: 1px solid #ecf0f1;
+}
+.time-cell {
+    min-width: 110px;
+    font-weight: 500;
+}
+.barangay-cell {
+    min-width: 120px;
+    font-weight: 500;
+}
+.type-cell {
+    min-width: 140px;
+    color: #e74c3c;
+    font-weight: 600;
+}
+.image-cell {
+    text-align: center;
+    min-width: 80px;
+}
+.alert-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    transition: transform 0.2s;
+    display: block;
+    margin: 0 auto;
+}
+.alert-thumbnail:hover {
+    transform: scale(1.05);
+}
+.alert-button-submit {
+    background-color: #f39c12;
+    color: white;
+    padding: 5px 10px;
+    font-size: 11px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.alert-button-submit:hover {
+    background-color: #d68910;
+    box-shadow: 0 2px 6px rgba(243,156,18,0.3);
+}
+.dropdown-emergency {
+    padding: 5px 8px;
+    width: 50%;
+    display: flex;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 15px;
+    background-color: #fff;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    flex-shrink: 0;
+}
+.dropdown-emergency:hover {
+    border-color: #3498db;
+}
+.dropdown-emergency:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 4px rgba(52,152,219,0.3);
+}
 
+.sidebar2 {
+    width: 226px;
+    position: absolute;
+    text-align: center;
+    height: 73%;
+    margin-left: 1683px;
+    
+    /* TRANSPARENT BACKGROUND */
+    /* 0.6 is the opacity (0 is invisible, 1 is solid). Adjust as needed. */
+    background-color: rgba(214, 213, 213, 0.6); 
+    backdrop-filter: blur(5px); /* Optional: Adds a nice blur effect behind it */
+    
+    color: #000000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    top: 0px;
+
+    /* MAKE IT SCROLLABLE */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Custom Scrollbar Styling (Firefox) */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
+}
+
+/* Custom Scrollbar Styling (Chrome, Edge, Safari) */
+.sidebar2::-webkit-scrollbar {
+    width: 5px; /* Thin scrollbar */
+}
+
+.sidebar2::-webkit-scrollbar-track {
+    background: transparent; /* Track is invisible */
+}
+
+.sidebar2::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.4); /* Dark semi-transparent handle */
+    border-radius: 10px; /* Rounded corners */
+}
+
+.sidebar2::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.7); /* Darker on hover */
+}
+
+/* HEADERS & ITEMS */
+.sidebar2 h6 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #000000;
+    
+    /* Keeps the title fixed at the top while scrolling */
+    position: sticky;
+    top: 0;
+    background-color: rgba(214, 213, 213, 0.9); /* Slightly more solid so text doesn't overlap */
+    z-index: 10;
+    padding-top: 15px;
+    margin-top: 0;
+    padding-bottom: 10px;
+}
+
+.officer-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3); /* Fainter border for transparent look */
+}
+
+.officer-date {
+    font-size: 13px;
+    color: #000000;
+}
+
+.officer-name {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* HEADER WELCOME MESSAGE */
+.officer-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(2px);
+}
+
+.officer-modal-content {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    font-family: 'Poppins', sans-serif;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.officer-modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.officer-modal-content select,
+.officer-modal-content input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.officer-modal-content select:focus,
+.officer-modal-content input:focus {
+    border-color: #007bff;
+}
+
+.officer-modal-content button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.officer-modal-content button:hover {
+    background: #0056b3;
+}
+
+.header-welcome-text {
+    margin-left: 15px;
+    margin-right: 5px;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 2rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* New: Row for Total Incidents and Responded */
 .stats-row {
     display: flex;
-    flex-direction: row; /* Side-by-side layout */
-    gap: 20px; /* Space between Total Incidents and Responded */
-    width: 100%; /* Full width within stats */
-    justify-content: center; /* Center the stat-items */
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
 }
 
-/* Individual container for each stat item */
 .stat-item {
-    background: #ffffff; /* White background */
-    border-right: 4px solid #3498db; 
+    background: #ffffff;
+    border-right: 4px solid #3498db;
     border-radius: 10px;
-    padding: 60px; /* Inner padding */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
-    height: 170px; /* Adjust to content */
-    max-width: 290px; /* As provided */
-    width: 650px; 
+    padding: 60px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-right: 10px;
+    height: 170px;
+    max-width: 200px;
+    width: 650px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -234,10 +509,8 @@ main {
 
 /* Chart container within stat-item */
 .chart-container {
-    background: #ffffff; 
-    border-right: 4px solid #3498db; 
     margin-top: 20px; /* Space below the map/stats row */
-    width: 100%; /* Full width to match map/stats row */
+    width: 80%; /* Full width to match map/stats row */
     height: 420px; /* As provided, adjusted to max-height */
     border-radius: 10px;
     padding: 20px;
@@ -245,7 +518,7 @@ main {
     
 }
 #alertsPerMonthChart {
-        width: 40% !important;
+        width: 50% !important;
         height: 70% !important;
         
         transition: transform 0.3s ease;
@@ -603,4 +876,45 @@ canvas {
             transition: transform 0.3s ease;
             
         }
+}
+
+/* RESPONSIVE */
+@media (max-width: 1600px) {
+    .prediction-charts-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 1200px) {
+    .prediction-charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-box {
+        height: 400px;
+    }
+}
+@media (max-width: 1440px) {
+    .main-content {
+        margin-top: 76px;
+        margin-left: 202px;
+    }
+    .main-content.shifted {
+        left: 21px;
+        width: calc(99% - 170px);
+    }
+    .sidebar {
+        width: 250px;
+        top: 63px;
+    }
+    #map {
+        height: 705px;
+        width: 700px;
+    }
+    .stat-item {
+        width: 700px;
+        margin-right: 150px;
+    }
+    .chart-container {
+        width: 87%;
+        height: 515px;
+    }
 }

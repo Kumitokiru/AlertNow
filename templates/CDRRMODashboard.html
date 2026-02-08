@@ -179,11 +179,25 @@
             <div class="filters"></div>
         </header>
     </div>
+
+    <div id="officerModal" class="officer-modal-overlay">
+        <div class="officer-modal-content">
+            <h3>Who's In Charge Today?</h3>
+            <input type="text" id="officerName" placeholder="Enter Name" autocomplete="off">
+            <button onclick="setOfficer()">OK</button>
+        </div>
+    </div>
+
     <main class="main-content" id="mainContent">
         <h2 class="h2" style="position: relative; display: inline-block; margin: 0 auto;">CDRRMO {{ municipality }} Map </h2>
         <p class="p" style="position: relative; display: inline-block; margin: 0 auto;">Coordinates: <span id="map-coordinates">{{ lat_coord|default(14.0549) }}, {{ lon_coord|default(121.3013) }}</span> (Municipality: {{ municipality }})</p>
         <div class="dashboard-container">
             <div id="map"></div>
+
+            <div class="sidebar2" id="sidebar2">
+                <h6>Recent Officer In Charge</h6>
+                <div id="officerList"></div>
+            </div>
             
             <section class="stats">
                 <div class="stats-row">
@@ -237,7 +251,22 @@
 
             <!-- Live Alerts -->
             <div id="live-alerts-tab" class="tab-content active">
-                <div id="live-alert-container" class="alert-grid"></div>
+                <div class="alert-table-wrapper">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Barangay</th>
+                                <th>Type</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="live-alert-container">
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Recent Alerts -->
@@ -246,7 +275,22 @@
                     <label for="recent-date-filter">Filter by Date: </label>
                     <input type="date" id="recent-date-filter">
                 </div>
-                <div id="recent-alert-container" class="alert-grid"></div>
+                <div class="alert-table-wrapper">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Barangay</th>
+                                <th>Type</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-alert-container">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

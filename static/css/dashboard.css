@@ -19,7 +19,6 @@ header {
     margin-bottom: 20px;
 }
 
-
 .alerts {
     display: flex;
     flex-direction: column;
@@ -28,6 +27,7 @@ header {
     width: 65%;
     margin-left: 10%;
 }
+
 .p {
     font-family: Arial, sans-serif;
     color: #000000;
@@ -40,13 +40,13 @@ header {
 }
 
 .alert-logo {
-    height: 50px; /* Adjust height as needed */
-    width: auto; /* Maintain aspect ratio */
-    margin-left: 15px; /* Space between logo and text */
+    height: 50px;
+    width: auto;
+    margin-left: 15px;
 }
 
 h1 {
-    margin: 0; /* Remove default margin to align properly */
+    margin: 0;
 }
 
 header h1 {
@@ -62,10 +62,11 @@ h3 {
     font-size: 1.5em;
     color: #000000;
     margin-top: 30px;
-    position: fixed; /* Fix the element to the viewport */
-    top: 0; /* Anchor to the top */
-    left: 80px; 
+    position: fixed;
+    top: 0;
+    left: 80px;
 }
+
 .toggle-btn {
     background: none;
     border: none;
@@ -81,14 +82,429 @@ h3 {
 .toggle-btn:hover {
     transform: rotate(90deg);
 }
+
 .sidebar {
     width: 260px;
     position: fixed;
-    height: 95%;
+    height: 90%;
     background: linear-gradient(135deg, #2c3e50, #3498db);
     color: #fff;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    top: 75px;
+    top: 130px;
+}
+
+.sidebar2 {
+    width: 226px;
+    position: absolute;
+    text-align: center;
+    height: 73%;
+    margin-left: 1683px;
+    
+    /* TRANSPARENT BACKGROUND */
+    /* 0.6 is the opacity (0 is invisible, 1 is solid). Adjust as needed. */
+    background-color: rgba(214, 213, 213, 0.6); 
+    backdrop-filter: blur(5px); /* Optional: Adds a nice blur effect behind it */
+    
+    color: #000000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    top: 0px;
+
+    /* MAKE IT SCROLLABLE */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Custom Scrollbar Styling (Firefox) */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
+}
+
+/* Custom Scrollbar Styling (Chrome, Edge, Safari) */
+.sidebar2::-webkit-scrollbar {
+    width: 5px; /* Thin scrollbar */
+}
+
+.sidebar2::-webkit-scrollbar-track {
+    background: transparent; /* Track is invisible */
+}
+
+.sidebar2::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.4); /* Dark semi-transparent handle */
+    border-radius: 10px; /* Rounded corners */
+}
+
+.sidebar2::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.7); /* Darker on hover */
+}
+
+/* HEADERS & ITEMS */
+.sidebar2 h6 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #000000;
+    
+    /* Keeps the title fixed at the top while scrolling */
+    position: sticky;
+    top: 0;
+    background-color: rgba(214, 213, 213, 0.9); /* Slightly more solid so text doesn't overlap */
+    z-index: 10;
+    padding-top: 15px;
+    margin-top: 0;
+    padding-bottom: 10px;
+}
+
+.officer-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3); /* Fainter border for transparent look */
+}
+
+.officer-date {
+    font-size: 13px;
+    color: #000000;
+}
+
+.officer-name {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* TABLE STYLING FOR ALERTS */
+/* TABLE STYLING FOR ALERTS - SCROLLABLE */
+/* TABLE STYLING FOR ALERTS - WITH VISIBLE LINES */
+.alert-table {
+    width: 100%;
+    border-collapse: collapse; /* Ensures lines stay together */
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 10px;
+    overflow: visible;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #bdc3c7; /* Outer border for the whole table */
+}
+
+.alert-table thead {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    font-weight: bold;
+    text-align: left;
+    position: sticky;
+    margin-top: 10px;
+    z-index: 10;
+}
+
+.alert-table th {
+    padding: 15px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #000000; /* Lines between header cells */
+}
+
+.alert-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+.alert-table tbody tr:hover {
+    background-color: #f5f7fa;
+}
+
+.alert-table td {
+    padding: 12px 15px;
+    font-size: 13px;
+    color: #2c3e50;
+    word-wrap: break-word;
+    border: 3px solid #000000; /* Horizontal and Vertical lines for all cells */
+}
+
+/* Optional: Make the Status column slightly more prominent with a border */
+.status-cell {
+    font-weight: 600;
+    min-width: 90px;
+    border-right: 2px solid #ecf0f1;
+}
+
+/* Optional: Differentiate the action cell area */
+.actions-cell {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-width: 350px;
+    align-items: center;
+    border-left: 1px solid #ecf0f1;
+}
+
+.time-cell {
+    min-width: 110px;
+    font-weight: 500;
+}
+
+.barangay-cell {
+    min-width: 120px;
+    font-weight: 500;
+}
+
+.type-cell {
+    min-width: 140px;
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.image-cell {
+    text-align: center;
+    min-width: 80px;
+}
+
+.alert-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    transition: transform 0.2s;
+    display: block;
+    margin: 0 auto;
+}
+
+.alert-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+
+.alert-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.alert-button-accept {
+    background-color: #27ae60;
+    color: white;
+}
+
+.alert-button-accept:hover {
+    background-color: #229954;
+    box-shadow: 0 2px 6px rgba(39,174,96,0.3);
+}
+
+.alert-button-decline {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.alert-button-decline:hover {
+    background-color: #c0392b;
+    box-shadow: 0 2px 6px rgba(231,76,60,0.3);
+}
+
+.alert-button-role {
+    background-color: #3498db;
+    color: white;
+    padding: 5px 10px;
+    font-size: 15px;
+}
+
+.alert-button-role:hover {
+    background-color: #2980b9;
+    box-shadow: 0 2px 6px rgba(52,152,219,0.3);
+}
+
+.alert-button-submit {
+    background-color: #f39c12;
+    color: white;
+    padding: 5px 10px;
+    font-size: 11px;
+}
+
+.alert-button-submit:hover {
+    background-color: #d68910;
+    box-shadow: 0 2px 6px rgba(243,156,18,0.3);
+}
+
+.role-buttons-container {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.response-form-inline {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.dropdown-emergency {
+    padding: 5px 8px;
+    width: 50%;
+    display: flex;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 15px;
+    background-color: #fff;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    flex-shrink: 0;
+}
+
+.dropdown-emergency:hover {
+    border-color: #3498db;
+}
+
+.dropdown-emergency:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 4px rgba(52,152,219,0.3);
+}
+
+/* EXPIRED AND RESPONDED STATUS STYLING */
+.status-pending {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.status-responded {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.status-expired {
+    color: #95a5a6;
+    font-weight: bold;
+}
+
+/* CONTAINER STYLING - SCROLLABLE */
+#live-alert-container,
+#recent-alert-container {
+    min-height: 200px;
+    padding: 0;
+    overflow: visible;
+}
+
+.alert-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-table-wrapper::-webkit-scrollbar {
+    height: 12px;
+    width: 12px;
+}
+
+.alert-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.alert-table-wrapper::-webkit-scrollbar-thumb {
+    background: #3498db;
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+.alert-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
+}
+
+/* Firefox Scrollbar */
+.alert-table-wrapper {
+    scrollbar-color: #3498db #f1f1f1;
+    scrollbar-width: thin;
+}
+
+.officer-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(2px);
+}
+
+.officer-modal-content {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    font-family: 'Poppins', sans-serif;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.officer-modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.officer-modal-content select,
+.officer-modal-content input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.officer-modal-content select:focus,
+.officer-modal-content input:focus {
+    border-color: #007bff;
+}
+
+.officer-modal-content button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.officer-modal-content button:hover {
+    background: #0056b3;
+}
+
+.header-welcome-text {
+    margin-left: 15px;
+    margin-right: 5px;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 2rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .sidebar.open {
@@ -113,15 +529,15 @@ h3 {
 
 .incident-number {
     position: absolute;
-    top: -40px; /* Offset upward to "sit on top" of the label */
+    top: -40px;
     left: 50%;
-    transform: translateX(-50%); 
+    transform: translateX(-50%);
     color: rgb(0, 0, 0);
-    font-size: 28px; /* Larger and bold for emphasis */
+    font-size: 28px;
     font-weight: bold;
     padding: -16px 10px;
-    border-radius: 50%; /* Circular badge for visual pop */
-    min-width: 35px; /* Ensures "0" looks balanced */
+    border-radius: 50%;
+    min-width: 35px;
     text-align: center;
 }
 
@@ -135,15 +551,13 @@ h3 {
 
 .sidebar nav ul li a:hover {
     background: #ddd;
-    color: #ffffff;   
-    
+    color: #ffffff;
     background-color: rgba(255, 255, 255, 0.1);
 }
 
 .dashboard {
     position: static;
     margin-bottom: 10px;
-    
 }
 
 main {
@@ -153,23 +567,23 @@ main {
 }
 
 .main-content {
-    position: fixed; /* Fix the element to the viewport */
-    top: 0; /* Anchor to the top */
-    left: -14%; /* Start from the left edge */
-    height: 95%; /* Match original height */
-    overflow: auto; /* Enable scrolling for overflow */
+    position: fixed;
+    top: 0;
+    left: -14%;
+    height: 90%;
+    overflow: auto;
     padding: 20px;
     width: 108%;
-    margin-top: 76px;  
-    margin-left: 260px; /* Retain original padding */
-    background-color: #d6d5d5; /* Light gray background */
+    margin-top: 130px;
+    margin-left: 260px;
+    background-color: #d6d5d5;
     transition: left 0.3s ease, width 0.3s ease;
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 .main-content::-webkit-scrollbar {
-    display: none;             /* Chrome, Safari, and Opera */
+    display: none;
 }
 
 .main-content::before,
@@ -181,10 +595,12 @@ main {
     color: #000;
     font-weight: bold;
 }
+
 .main-content::before {
     margin-left: 1px;
     top: 50px;
 }
+
 .main-content::after {
     bottom: 50px;
     margin-left: 10px;
@@ -195,92 +611,78 @@ main {
     width: calc(96% - 180px);
 }
 
-/* New: Dashboard container for side-by-side layout */
 .dashboard-container {
-    display: flex; /* Horizontal flexbox */
-    gap: 20px; /* Space between map and stats */
-    flex-wrap: wrap; /* Allow items to wrap to the next line */
-    align-items: flex-start; /* Align top for consistency */
-    margin-bottom: 20px; /* Space below the container */
-    
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 20px;
 }
+
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.8); }
     70% { box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); }
     100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
 }
 
-/* Map styling */
-#map { 
-    height: 600px; /* As provided */
-    width: 1250px; /* As provided */
-    position: relative; /* Flow naturally in dashboard-container */
-    top: 0; 
-    left: 0; /* Reset left */
-    border-radius: 20px; 
+#map {
+    height: 600px;
+    width: 1250px;
+    position: relative;
+    top: 0;
+    left: 0;
+    border-radius: 20px;
 }
 
-/* Stats section */
-
-
-/* New: Row for Total Incidents and Responded */
 .stats-row {
     display: flex;
-    flex-direction: row; /* Side-by-side layout */
-    gap: 20px; /* Space between Total Incidents and Responded */
-    width: 100%; /* Full width within stats */
-    justify-content: center; /* Center the stat-items */
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
 }
 
-/* Individual container for each stat item */
 .stat-item {
-    background: #ffffff; /* White background */
-    border-right: 4px solid #3498db; 
+    background: #ffffff;
+    border-right: 4px solid #3498db;
     border-radius: 10px;
-    padding: 60px; /* Inner padding */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
-    height: 170px; /* Adjust to content */
-    max-width: 300px; /* As provided */
-    width: 650px; 
+    padding: 60px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-right: 10px;
+    height: 170px;
+    max-width: 200px;
+    width: 650px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
 }
 
-
-/* Chart container within stat-item */
 .chart-container {
-    background: #ffffff; 
-    border-right: 4px solid #3498db; 
-    margin-top: 20px; /* Space below the map/stats row */
-    width: 100%; /* Full width within stat-item */
-    height: 380px; /* As provided, adjusted to max-height */
+    
+    
+    margin-top: 20px;
+    width: 80%;
+    height: 380px;
     border-radius: 10px;
     padding: 20px;
 }
 
 #alertsPerMonthChart {
-        width: 40% !important;
-        height: 80% !important;
-        transition: transform 0.3s ease;
-        
-    }
-#emergencyTypeChart:hoover {
-    background-color: #66c2ff; /* Typo: should be :hover */
-    cursor: pointer;
-    transform: scale(1.05); /* Slight zoom in on hover (5% scale up) */
-
+    width: 40% !important;
+    height: 80% !important;
+    transition: transform 0.3s ease;
 }
 
+
+
 .dropdown-emergency {
-    width: 100%; 
-    padding: 10px; 
-    margin: 5px 0; 
-    box-sizing: border-box; 
-    background-color: #66c2ff; 
-    border: 1px solid #000000ff; 
-    border-radius: 4px; 
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    box-sizing: border-box;
+    background-color: #66c2ff;
+    border: 1px solid #000000ff;
+    border-radius: 4px;
     text-align: center;
     cursor: pointer;
 }
@@ -297,7 +699,7 @@ main {
     border-radius: 4px;
     cursor: pointer;
     margin: 5px 0;
-    width: 100%; 
+    width: 100%;
     box-sizing: border-box;
     font-size: 17px;
 }
@@ -306,49 +708,28 @@ main {
     transform: scale(1.05);
 }
 
-/* Ensure p elements have no extra margins */
 .stats p {
     font-family: Arial, sans-serif;
     font-size: 20px;
     color: #000000;
-    width: 100%; /* Full width to ensure centering */
-    margin: 0; /* Remove default margins */
-    top: 20px
+    width: 100%;
+    margin: 0;
+    top: 20px;
 }
 
-/* Chart container h4 */
 .stats .chart-container h4 {
     font-size: 20px;
     color: #000000;
     margin-bottom: 10px;
     text-align: center;
-    
 }
 
-/* Ensure canvas fits within stat-item */
 canvas {
     max-width: 100%;
     display: block;
-    margin: 0 auto; /* Center within stat-item */
+    margin: 0 auto;
     background: #fff;
     border-radius: 5px;
-}
-
-/* Rest of the CSS remains unchanged */
-
-.incident-number {
-    position: absolute;
-    top: -40px; /* Offset upward to "sit on top" of the label */
-    
-    left: 50%;
-    transform: translateX(-50%); 
-    color: rgb(0, 0, 0);
-    font-size: 28px; /* Larger and bold for emphasis */
-    font-weight: bold;
-    padding: -16px 10px;
-    border-radius: 50%; /* Circular badge for visual pop */
-    min-width: 35px; /* Ensures "0" looks balanced */
-    text-align: center;
 }
 
 .alerts {
@@ -357,8 +738,8 @@ canvas {
 
 .alert-container {
     height: 150px;
-    max-width: 60%; 
-    overflow-y: auto; 
+    max-width: 60%;
+    overflow-y: auto;
     position: relative;
     left: -20px;
     top: 10px;
@@ -367,16 +748,6 @@ canvas {
     border: 1px solid #000000;
     color: #000000;
     padding: 15px;
-}
-
-.alert-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    width: 142%;
-    margin-right: -180px;
-    color: #000000;
-    row-gap: 70px; /* Vertical spacing */
-    column-gap: 88px;
 }
 
 .alert-container .p6 {
@@ -396,7 +767,6 @@ canvas {
     margin-top: 10px;
     border-radius: 5px;
 }
-
 
 .filters {
     background-color: #02CABA;
@@ -425,33 +795,198 @@ canvas {
 }
 
 .heatmap-layer {
-    opacity: 0.7; /* Slightly transparent for visibility over map */
-    z-index: 400; /* Ensure it overlays other map elements but under markers */
+    opacity: 0.7;
+    z-index: 400;
     transition: opacity 0.3s ease;
 }
 
 .heatmap-layer:hover {
-    opacity: 0.9; /* Slightly more opaque on hover for interactivity */
+    opacity: 0.9;
 }
+
+.image-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 5px;
+}
+
+.image-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.alert-tabs {
+    display: flex;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+    width: fit-content;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-tab {
+    padding: 14px 32px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.3s;
+}
+
+.alert-tab:hover {
+    background: #f0f0f0;
+}
+
+.alert-tab.active {
+    background: #3498db;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.date-filter-container {
+    margin: 15px 0;
+    text-align: right;
+}
+
+.date-filter-container input {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+#notification {
+    position: fixed;
+    width: 50px;
+    bottom: 10px;
+    right: 10px;
+}
+
+.prediction-charts-grid {
+    display: grid;
+    
+    grid-template-columns: repeat(3, 1fr);
+    margin-right: -300px;
+    gap: 1px;
+    
+    max-width: 1800px;
+    padding: 0 30px;
+}
+
+.chart-box {
+    border-radius: 20px;
+    padding: 30px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    flex-direction: column;
+}
+
+.chart-title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+#yearlyPredictionChart,
+#monthlyComparisonChart,
+#julDecChart,
+#fireYearlyChart,
+#fireMonthlyChart,
+#fireJulDecChart {
+    width: 100% !important;
+    height: 100% !important;
+    flex-grow: 1;
+    
+}
+
+#alerts {
+    margin-top: 40px;
+}
+
+.prediction-charts-grid:last-of-type {
+    margin-bottom: 1px;
+}
+
+.main-content > section#alerts {
+    margin-top: 30px;
+    padding-top: 0;
+}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media (max-width: 1400px) {
+    .alert-table {
+        font-size: 12px;
+    }
+
+    .alert-table th,
+    .alert-table td {
+        padding: 10px;
+    }
+
+    .alert-button {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 900px) {
+    .actions-cell {
+        min-width: 250px;
+    }
+
+    .dropdown-emergency {
+        font-size: 10px;
+        padding: 4px 6px;
+    }
+}
+
 @media (max-width: 1440px) {
     .main-content {
-        position: fixed; /* Fix the element to the viewport */
-        top: 0; /* Anchor to the top */
-        left: -14%; /* Start from the left edge */
-        height: 95%; /* Match original height */
-        overflow: auto; /* Enable scrolling for overflow */
+        position: fixed;
+        top: 0;
+        left: -14%;
+        height: 95%;
+        overflow: auto;
         padding: 20px;
         width: 108%;
-        margin-top: 76px;  
-        margin-left: 202px; /* Retain original padding */
-        background-color: #d6d5d5; /* Light gray background */
+        margin-top: 76px;
+        margin-left: 202px;
+        background-color: #d6d5d5;
         transition: left 0.3s ease, width 0.3s ease;
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
     .main-content::-webkit-scrollbar {
-        display: none;             /* Chrome, Safari, and Opera */
+        display: none;
     }
 
     .main-content::before,
@@ -463,10 +998,12 @@ canvas {
         color: #000;
         font-weight: bold;
     }
+
     .main-content::before {
         margin-left: 1px;
         top: 50px;
     }
+
     .main-content::after {
         bottom: 50px;
         margin-left: 50px;
@@ -477,30 +1014,26 @@ canvas {
         width: calc(99% - 170px);
     }
 
-    /* New: Dashboard container for side-by-side layout */
     .dashboard-container {
-        display: flex; /* Horizontal flexbox */
-        gap: 20px; /* Space between map and stats */
-        align-items: flex-start; /* Align top for consistency */
-        margin-bottom: 20px; /* Space below the container */
-        
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        margin-bottom: 20px;
     }
 
-    /* Map styling */
-    #map { 
-        height: 600px; /* As provided */
-        width: 700px; /* As provided */
-        position: relative; /* Flow naturally in dashboard-container */
-        top: 0; 
-        left: 0; /* Reset left */
-        border-radius: 20px; 
+    #map {
+        height: 600px;
+        width: 700px;
+        position: relative;
+        top: 0;
+        left: 0;
+        border-radius: 20px;
     }
-
-    /* Stats section */
 
     .prediction-charts-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
+        margin-left: 550px;
         gap: 1px;
         margin-top: -10px;
         margin: 50px auto;
@@ -526,158 +1059,51 @@ canvas {
         flex-shrink: 0;
     }
 
-    #yearlyPredictionChart,
-    #monthlyComparisonChart,
-    #julDecChart, 
-    #fireYearlyChart,
-    #fireMonthlyChart,
-    #fireJulDecChart {
-        width: 100% !important;
-        height: 100% !important;
-        flex-grow: 1;
-    }
-    #alerts {
-        margin-top: 40px;  /* ← Was probably too large before */
+    #yearlyPredictionChart {
+        width: 780px !important;
+        height: 80% !important;
     }
 
-    /* If you have multiple prediction grids, reduce the bottom margin of the last one */
-    .prediction-charts-grid:last-of-type {
-        margin-bottom: 1px;  /* ← Smaller gap before alerts */
+    #emergencyTypeChart {
+        width: 15% !important;
+        height: 40% !important;
     }
 
-    /* Optional: tighter spacing for the entire section */
-    .main-content > section#alerts {
-        margin-top: 30px;
-        padding-top: 0;
+    #emergencyTypeChart:hover {
+        background-color: #66c2ff;
+        cursor: pointer;
+        transform: scale(1.05);
     }
-    /* New: Row for Total Incidents and Responded */
+
     .stats-row {
         display: flex;
-        flex-direction: row; /* Side-by-side layout */
-        gap: 20px; /* Space between Total Incidents and Responded */
-        width: 90%; /* Full width within stats */
-        justify-content: center; /* Center the stat-items */
+        flex-direction: row;
+        gap: 20px;
+        width: 90%;
+        justify-content: center;
     }
 
-    /* Individual container for each stat item */
     .stat-item {
-        background: #ffffff; /* White background */
-        border-right: 4px solid #3498db; 
+        background: #ffffff;
+        border-right: 4px solid #3498db;
         border-radius: 10px;
-        padding: 60px; /* Inner padding */
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
-        height: 170px; /* Adjust to content */
-        max-width: 240px; /* As provided */
-        width: 600px; 
+        padding: 60px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        height: 170px;
+        max-width: 240px;
+        width: 600px;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
 
-
-    /* Chart container within stat-item */
     .chart-container {
-        background: #ffffff; 
-        border-right: 4px solid #3498db; 
-        margin-top: 50px; /* Remove extra margins */
-        width: 91%; /* Full width within stat-item */
-        height: 380px; /* As provided, adjusted to max-height */
-        border-radius: 10px;
-    }
-    #prediction-section {
-        display: flex;
-        background: #f1f1f1;
-        border-radius: 10px;
-        overflow: hidden;
-        margin: 20px 0;
-        width: fit-content;
-    }
-    .alert-tab {
-        padding: 12px 30px;
-        cursor: pointer;
-        font-weight: bold;
-        color: #333;
-        transition: all 0.3s;
-    }
-    .alert-tab.active {
-        background: #3498db;
-        color: white;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
-    .date-filter {
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        max-width: 1000px;
-        text-align: center;
-        display: none;
-    }
-
-    #prediction-section.active {
-        display: block;
-    }
-
-    #yearly-prediction-chart-container {
-        height: 480px;              /* Increased height for clarity */
-        max-width: 900px;
-        margin: 20px auto;
-        padding: 20px;
         background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    }
-
-    .prediction-title h2 {
-        font-size: 28px;
-        color: #2c3e50;
-        margin-bottom: 10px;
-    }
-
-    .prediction-title p {
-        color: #7f8c8d;
-        font-size: 18px;
-    }
-
-    .back-to-dashboard {
-        padding: 12px 24px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        margin-bottom: 20px;
-    }
-
-    .back-to-dashboard:hover {
-        background: #2980b9;
-    }
-    #yearlyPredictionChart {
-        width: 780px !important;
-        height: 80% !important;
-
-    }
-    #emergencyTypeChart {
-            width: 40% !important;
-            height: 80% !important;
-            transition: transform 0.3s ease;
-            
-        }
-    #emergencyTypeChart {
-        width: 30% !important;
-        height: 40% !important;
-        
-        
-    }
-    #emergencyTypeChart:hoover {
-        background-color: #66c2ff;
-        cursor: pointer;
-        transform: scale(1.05); /* Slight zoom in on hover (5% scale up) */
-
+        border-right: 4px solid #3498db;
+        margin-top: 50px;
+        width: 91%;
+        height: 380px;
+        border-radius: 10px;
     }
 }
