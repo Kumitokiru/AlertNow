@@ -500,6 +500,7 @@ def handle_submit_response(data):
         lon = data.get('lon', 0.0)
         timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')  # Changed to string
         responded = True
+        prediction = None
 
         conn = get_db_connection()
         if role == 'barangay':
