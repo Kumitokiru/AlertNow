@@ -160,31 +160,58 @@ def get_recent_cdrrmo_officers():
         for r in rows
     ])
     
+def handle_store_cdrrmo_alert(data):
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT OR IGNORE INTO cdrrmo_alert (alert_id, status, time, barangay, type, image)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (data['alert_id'], 'LIVE', data['time'], data['barangay'], data['type'], data.get('image', '')))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error storing cdrrmo alert: {e}")
+
 def handle_load_cdrrmo_alerts():
-    conn = get_db_connection()
-    rows = conn.execute("""
-        SELECT * FROM cdrrmo_alert WHERE status = 'PENDING'
-        ORDER BY time DESC
-    """).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM cdrrmo_alert").fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error loading cdrrmo alerts: {e}")
+        return []
 
-def handle_cdrrmo_alert_expire(alert_id):
-    conn = get_db_connection()
-    conn.execute("""
-        INSERT INTO cdrrmo_alert_expire
-        SELECT * FROM cdrrmo_alert WHERE alert_id = ?
-    """, (alert_id,))
-    conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
-    conn.commit()
-    conn.close()
+def handle_load_cdrrmo_expired():
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM cdrrmo_alert_expire ORDER BY time DESC").fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error loading expired cdrrmo alerts: {e}")
+        return []
 
-def handle_alert_expiration(alert_id, table_name):
-    conn = get_db_connection()
-    conn.execute(f'''
-        UPDATE cdrrmo_alert
-        SET status = 'EXPIRED'
-        WHERE alert_id = ?
-    ''', (alert_id,))
-    conn.commit()
-    conn.close()
+def handle_move_cdrrmo_to_recent(alert_id):
+    try:
+        conn = get_db_connection()
+        alert = conn.execute("SELECT * FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,)).fetchone()
+        if alert:
+            conn.execute('''
+                INSERT OR IGNORE INTO cdrrmo_alert_expire (alert_id, status, time, barangay, type, image)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+            conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error moving cdrrmo alert to recent: {e}")
+
+def handle_remove_cdrrmo_alert(alert_id):
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error removing cdrrmo alert: {e}")

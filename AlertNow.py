@@ -54,21 +54,24 @@ from AgencyIn import send_dilg_password
 from SignUpType import download_apk_folder, generate_qr
 
 from BarangayDashboard import (get_barangay_stats, get_latest_alert, get_the_stats, get_new_alert, 
-                               
                                get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
-                               save_officer, get_recent_officers)
+                               save_officer, get_recent_officers, handle_store_barangay_alert, handle_load_barangay_alerts, 
+                               handle_load_barangay_expired, handle_move_barangay_to_recent, handle_remove_barangay_alert)
 
 from CDRRMODashboard import (get_cdrrmo_stats, get_latest_alert, get_the_cdrrmo_stats, get_cdrrmo_new_alert, 
                              get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
-                             save_cdrrmo_officer, get_recent_cdrrmo_officers)
+                             save_cdrrmo_officer, get_recent_cdrrmo_officers, handle_store_cdrrmo_alert, handle_load_cdrrmo_alerts,
+                             handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent, handle_remove_cdrrmo_alert)
 
 from PNPDashboard import (get_pnp_stats, get_latest_alert, get_the_pnp_stats, get_pnp_new_alert, get_pnp_alerts_per_month, 
                           get_pnp_responded_count, emit_pnp_alerts_per_month_update,
-                          save_pnp_officer, get_recent_pnp_officers)
+                          save_pnp_officer, get_recent_pnp_officers, handle_store_pnp_alert, handle_load_pnp_alerts, 
+                          handle_load_pnp_expired, handle_move_pnp_to_recent, handle_remove_pnp_alert)
 
 from BFPDashboard import (get_bfp_stats, get_latest_alert, get_the_stat_bfp, get_bfp_alerts_per_month, 
                           get_bfp_responded_count, emit_bfp_alerts_per_month_update, 
-                          save_bfp_officer, get_recent_bfp_officers)
+                          save_bfp_officer, get_recent_bfp_officers, handle_store_bfp_alert, handle_load_bfp_alerts, 
+                          handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert)
 
 from HealthDashboard import get_health_stats, get_latest_alert
 
@@ -195,6 +198,8 @@ def handle_new_alert(data):
         data['resident_barangay'] = data.get('barangay', 'Unknown')
 
         alerts.append(data)
+        
+        handle_store_barangay_alert(data)
 
         barangay_room = f"barangay_{data.get('barangay').lower() if data.get('barangay') else ''}"
         emit('new_alert', data, room=barangay_room)
@@ -731,6 +736,13 @@ def handle_redirect_alert(data):
         # Valid roles
         valid_roles = ['bfp', 'cdrrmo', 'pnp', 'health', 'hospital']
         
+        if target_role == 'cdrrmo':
+            handle_store_cdrrmo_alert(data)
+        elif target_role == 'bfp':
+            handle_store_bfp_alert(data)
+        elif target_role == 'pnp':
+            handle_store_pnp_alert(data)
+        
         if target_role not in valid_roles:
             logger.error(f"Invalid target role: {target_role}")
             return
@@ -756,6 +768,8 @@ def handle_redirect_alert(data):
             pnp_data = data.copy()
             pnp_data['target_role'] = 'pnp'
             
+            
+            handle_store_pnp_alert(pnp_data)
             emit('pnp_redirect_alert', pnp_data, room=pnp_room)
             emit('update_map', map_data, room=pnp_room)
             emit('update_dashboard_emergency_type', {
@@ -2331,6 +2345,65 @@ def save_pnp_officer_handler():
 def get_recent_pnp_officers_handler():
     return get_recent_pnp_officers()
 
+@app.route('/load_barangay_alerts')
+def load_barangay_alerts_route():
+    barangay = session.get('barangay')
+    return handle_load_barangay_alerts(barangay) if barangay else jsonify([])
+
+@app.route('/load_barangay_expired')
+def load_barangay_expired_route():
+    barangay = session.get('barangay')
+    return handle_load_barangay_expired(barangay) if barangay else jsonify([])
+
+@app.route('/expire_barangay_alert', methods=['POST'])
+def expire_barangay_alert_route():
+    data = request.get_json()
+    return handle_move_barangay_to_recent(data['alert_id'])
+
+# CDRRMO
+@app.route('/load_cdrrmo_alerts')
+def load_cdrrmo_alerts_route():
+    # Load all for now or filter by municipality if needed
+    return handle_load_cdrrmo_alerts() 
+
+@app.route('/load_cdrrmo_expired')
+def load_cdrrmo_expired_route():
+    return handle_load_cdrrmo_expired()
+
+@app.route('/expire_cdrrmo_alert', methods=['POST'])
+def expire_cdrrmo_alert_route():
+    data = request.get_json()
+    return handle_move_cdrrmo_to_recent(data['alert_id'])
+
+# BFP
+@app.route('/load_bfp_alerts')
+def load_bfp_alerts_route():
+    return handle_load_bfp_alerts()
+
+@app.route('/load_bfp_expired')
+def load_bfp_expired_route():
+    return handle_load_bfp_expired()
+
+@app.route('/expire_bfp_alert', methods=['POST'])
+def expire_bfp_alert_route():
+    data = request.get_json()
+    return handle_move_bfp_to_recent(data['alert_id'])
+
+# PNP
+@app.route('/load_pnp_alerts')
+def load_pnp_alerts_route():
+    return handle_load_pnp_alerts()
+
+@app.route('/load_pnp_expired')
+def load_pnp_expired_route():
+    return handle_load_pnp_expired()
+
+@app.route('/expire_pnp_alert', methods=['POST'])
+def expire_pnp_alert_route():
+    data = request.get_json()
+    return handle_move_pnp_to_recent(data['alert_id'])
+
+
 app.route('/barangay_charts')(barangay_charts)
 app.route('/barangay_charts_data')(barangay_charts_data)
 app.route('/barangay_fire_charts_data')(barangay_fire_charts_data)
@@ -2351,6 +2424,122 @@ app.route('/hospital_charts_data')(hospital_charts_data)
 
 app.route('/download_apk_folder')(download_apk_folder)
 app.route('/generate_qr')(generate_qr)
+
+@app.route('/delete_barangay_alert', methods=['POST'])
+def delete_barangay_alert_route():
+    """Delete alert from barangay_alert table when submitted or declined"""
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"Deleted barangay alert {alert_id} from live table")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error deleting barangay alert: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete_bfp_alert', methods=['POST'])
+def delete_bfp_alert_route():
+    """Delete alert from bfp_alert table when submitted or declined"""
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"Deleted BFP alert {alert_id} from live table")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error deleting bfp alert: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete_cdrrmo_alert', methods=['POST'])
+def delete_cdrrmo_alert_route():
+    """Delete alert from cdrrmo_alert table when submitted or declined"""
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"Deleted CDRRMO alert {alert_id} from live table")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error deleting cdrrmo alert: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete_pnp_alert', methods=['POST'])
+def delete_pnp_alert_route():
+    """Delete alert from pnp_alert table when submitted or declined"""
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM pnp_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"Deleted PNP alert {alert_id} from live table")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error deleting pnp alert: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+    
+# Barangay Routes
+@app.route('/remove_barangay_alert', methods=['POST'])
+def remove_barangay_alert():
+    data = request.json
+    handle_remove_barangay_alert(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+@app.route('/move_barangay_to_recent', methods=['POST'])
+def move_barangay_to_recent_route():
+    data = request.json
+    handle_move_barangay_to_recent(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+# BFP Routes
+@app.route('/remove_bfp_alert', methods=['POST'])
+def remove_bfp_alert():
+    data = request.json
+    handle_remove_bfp_alert(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+@app.route('/move_bfp_to_recent', methods=['POST'])
+def move_bfp_to_recent_route():
+    data = request.json
+    handle_move_bfp_to_recent(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+# CDRRMO Routes
+@app.route('/remove_cdrrmo_alert', methods=['POST'])
+def remove_cdrrmo_alert():
+    data = request.json
+    handle_remove_cdrrmo_alert(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+@app.route('/move_cdrrmo_to_recent', methods=['POST'])
+def move_cdrrmo_to_recent_route():
+    data = request.json
+    handle_move_cdrrmo_to_recent(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+# PNP Routes
+@app.route('/remove_pnp_alert', methods=['POST'])
+def remove_pnp_alert():
+    data = request.json
+    handle_remove_pnp_alert(data.get('alert_id'))
+    return jsonify({"status": "success"})
+
+@app.route('/move_pnp_to_recent', methods=['POST'])
+def move_pnp_to_recent_route():
+    data = request.json
+    handle_move_pnp_to_recent(data.get('alert_id'))
+    return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'users_web.db')

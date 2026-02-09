@@ -138,17 +138,58 @@ function toggleSidebar() {
     mainContent.classList.toggle('shifted');
 }
 
-function moveToRecent(alertId) {
-    if (!liveAlerts.has(alertId)) return;
-    const { element } = liveAlerts.get(alertId);
-    liveAlerts.delete(alertId);
-    recentAlerts.set(alertId, { element, timestamp: Date.now() });
+const alertTimers = new Map();
 
-    element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
-    
-    document.getElementById('recent-alert-container')
-        .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+function loadStoredAlerts() {
+    // Clear containers to prevent duplicates on refresh
+    document.getElementById('live-alert-container').innerHTML = '';
+    document.getElementById('recent-alert-container').innerHTML = '';
+
+    // Load Live Alerts from database
+    fetch('/load_bfp_alerts')
+        .then(r => r.json())
+        .then(data => {
+            data.forEach(alertData => {
+                alertData.expired = false;
+                alertData.emergency_type = alertData.type; // Map 'type' to 'emergency_type'
+                updateUIWithAlert(alertData); 
+            });
+        });
+
+    // Load Recent (Expired) Alerts from database
+    fetch('/load_bfp_expired')
+        .then(r => r.json())
+        .then(data => {
+            data.forEach(d => {
+                d.expired = true;
+                d.emergency_type = d.type;
+                updateUIWithAlert(d);
+            });
+        });
 }
+
+
+
+    function moveToRecent(alertId) {
+        if (!liveAlerts.has(alertId)) return;
+        const { element } = liveAlerts.get(alertId);
+        
+        liveAlerts.delete(alertId);
+        alertTimers.delete(alertId);
+        
+        // Update UI status to EXPIRED
+        const statusCell = element.querySelector('.status-cell');
+        if (statusCell) statusCell.innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+
+        document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+
+        // Sync with Database: Move from bfp_alert to bfp_alert_expire
+        fetch('/move_bfp_to_recent', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({alert_id: alertId})
+        });
+    }
 
 // --- CHARTS LOGIC ---
 let fireYearlyChart = null;
@@ -614,6 +655,7 @@ function updateFireCharts(data) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadStoredAlerts();
     initializeCharts();
     
     const lat = {{ lat_coord|default(14.0549) }};
@@ -724,8 +766,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateTotalIncidents();
         
-        const timer = setTimeout(() => moveToRecent(data.alert_id), 30000);
-        liveAlerts.set(data.alert_id, { element: alertItem, timer });
+        if (isLive) {
+            const timer = setTimeout(() => moveToRecent(data.alert_id), 30000); // 30 seconds
+            alertTimers.set(data.alert_id, timer);
+        }
     }
 
     function showResponseForm(container, data) {
@@ -821,7 +865,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(predictionSpan);
             }
 
-            setTimeout(() => moveToRecent(data.alert_id), 30000);
+            if(alertTimers.has(data.alert_id)) {
+                clearTimeout(alertTimers.get(data.alert_id));
+                alertTimers.delete(data.alert_id);
+            }
+
+            // Remove from Live database so it doesn't reappear on refresh
+            fetch('/remove_bfp_alert', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({alert_id: data.alert_id})
+            });
+            
+            // Remove from UI
+            const alertItem = alertElements.get(data.alert_id);
+            if (alertItem) alertItem.remove();
         };
         form.appendChild(submitBtn);
         container.appendChild(form);

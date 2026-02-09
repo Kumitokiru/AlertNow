@@ -148,31 +148,58 @@ def get_recent_bfp_officers():
         for r in rows
     ])
     
+def handle_store_bfp_alert(data):
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT OR IGNORE INTO bfp_alert (alert_id, status, time, barangay, type, image)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (data['alert_id'], 'LIVE', data['time'], data['barangay'], data['type'], data.get('image', '')))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error storing bfp alert: {e}")
+
 def handle_load_bfp_alerts():
-    conn = get_db_connection()
-    rows = conn.execute("""
-        SELECT * FROM bfp_alert WHERE status = 'PENDING'
-        ORDER BY time DESC
-    """).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM bfp_alert").fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error loading bfp alerts: {e}")
+        return []
 
-def handle_bfp_alert_expire(alert_id):
-    conn = get_db_connection()
-    conn.execute("""
-        INSERT INTO bfp_alert_expire
-        SELECT * FROM bfp_alert WHERE alert_id = ?
-    """, (alert_id,))
-    conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
-    conn.commit()
-    conn.close()
+def handle_load_bfp_expired():
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM bfp_alert_expire ORDER BY time DESC").fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error loading expired bfp alerts: {e}")
+        return []
 
-def handle_alert_expiration(alert_id, table_name):
-    conn = get_db_connection()
-    conn.execute(f'''
-        UPDATE bfp_alert
-        SET status = 'EXPIRED'
-        WHERE alert_id = ?
-    ''', (alert_id,))
-    conn.commit()
-    conn.close()
+def handle_move_bfp_to_recent(alert_id):
+    try:
+        conn = get_db_connection()
+        alert = conn.execute("SELECT * FROM bfp_alert WHERE alert_id = ?", (alert_id,)).fetchone()
+        if alert:
+            conn.execute('''
+                INSERT OR IGNORE INTO bfp_alert_expire (alert_id, status, time, barangay, type, image)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+            conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error moving bfp alert to recent: {e}")
+
+def handle_remove_bfp_alert(alert_id):
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error removing bfp alert: {e}")

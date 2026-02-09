@@ -181,46 +181,62 @@ def get_recent_officers():
         for r in rows
     ])
     
-def handle_store_forwarded_alert(role, alert):
-    conn = get_db_connection()
-    table = f"{role}_alert"
-    conn.execute(f"""
-        INSERT OR IGNORE INTO {table}
-        (alert_id, status, time, barangay, type, image)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        alert['alert_id'],
-        'PENDING',
-        alert['timestamp'],
-        alert.get('barangay'),
-        alert.get('emergency_type'),
-        alert.get('image', '')
-    ))
-    conn.commit()
-    conn.close()
-    
+def handle_store_barangay_alert(data):
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT OR IGNORE INTO barangay_alert (alert_id, status, time, barangay, type, image)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (data['alert_id'], 'PENDING', data['timestamp'], data.get('barangay'), data.get('emergency_type'), data.get('image')))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error storing barangay alert: {e}")
+
 def handle_load_barangay_alerts(barangay):
-    conn = get_db_connection()
-    rows = conn.execute("""
-        SELECT * FROM barangay_alert
-        WHERE barangay = ? AND status = 'PENDING'
-        ORDER BY time DESC
-    """, (barangay,)).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM barangay_alert WHERE barangay = ?", (barangay,)).fetchall()
+        conn.close()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        logger.error(f"Error loading barangay alerts: {e}")
+        return jsonify([])
 
-def handle_barangay_alert_expire(alert_id):
-    conn = get_db_connection()
-    alert = conn.execute(
-        "SELECT * FROM barangay_alert WHERE alert_id = ?", (alert_id,)
-    ).fetchone()
+def handle_load_barangay_expired(barangay):
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT * FROM barangay_alert_expire WHERE barangay = ? ORDER BY time DESC", (barangay,)).fetchall()
+        conn.close()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        logger.error(f"Error loading expired barangay alerts: {e}")
+        return jsonify([])
 
-    if alert:
-        conn.execute("""
-            INSERT INTO barangay_alert_expire
-            SELECT * FROM barangay_alert WHERE alert_id = ?
-        """, (alert_id,))
+def handle_remove_barangay_alert(alert_id):
+    try:
+        conn = get_db_connection()
         conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error removing barangay alert: {e}")
+        return False
 
-    conn.commit()
-    conn.close()
+def handle_move_barangay_to_recent(alert_id):
+    try:
+        conn = get_db_connection()
+        alert = conn.execute("SELECT * FROM barangay_alert WHERE alert_id = ?", (alert_id,)).fetchone()
+        if alert:
+            conn.execute('''
+                INSERT OR IGNORE INTO barangay_alert_expire (alert_id, status, time, barangay, type, image)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+            conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
+            conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error moving barangay alert to recent: {e}")
+        return False
