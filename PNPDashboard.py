@@ -187,7 +187,7 @@ def handle_store_pnp_alert(data):
         conn.execute('''
             INSERT OR IGNORE INTO pnp_alert (alert_id, status, time, barangay, type, image)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (data['alert_id'], 'LIVE', data['time'], data['barangay'], data['type'], data.get('image', '')))
+        ''', (data['alert_id'], 'LIVE', data.get('timestamp'), data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
         conn.commit()
         conn.close()
     except Exception as e:
