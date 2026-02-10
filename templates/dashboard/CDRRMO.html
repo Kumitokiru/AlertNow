@@ -128,40 +128,41 @@
         const alertTimers = new Map();
 
         function loadStoredAlerts() {
-            document.getElementById('live-alert-container').innerHTML = '';
-            document.getElementById('recent-alert-container').innerHTML = '';
-
-            fetch('/load_cdrrmo_alerts')
-                .then(r => r.json())
-                .then(data => {
-                    data.forEach(alertData => {
-                        alertData.expired = false;
-                        alertData.emergency_type = alertData.type;
-                        updateUIWithAlert(alertData);
-                    });
+            fetch('/load_cdrrmo_alerts').then(r => r.json()).then(data => {
+                data.forEach(alertData => {
+                    alertData.expired = false;
+                    alertData.emergency_type = alertData.type;
+                    alertData.timestamp = alertData.time;
+                    updateUIWithAlert(alertData);
                 });
-
-            fetch('/load_cdrrmo_expired')
-                .then(r => r.json())
-                .then(data => {
-                    data.forEach(d => {
-                        d.expired = true;
-                        d.emergency_type = d.type;
-                        updateUIWithAlert(d);
-                    });
+            });
+            fetch('/load_cdrrmo_expired').then(r => r.json()).then(data => {
+                const container = document.getElementById('recent-alert-container');
+                data.forEach(d => {
+                    const row = document.createElement('tr');
+                    row.className = 'alert-row';
+                    row.innerHTML = `
+                        <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
+                        <td class="time-cell">${new Date(d.time).toLocaleTimeString()}</td>
+                        <td class="barangay-cell">${d.barangay}</td>
+                        <td class="type-cell">${d.type}</td>
+                        <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px;" onclick="showImage('${d.image}')" />` : 'No Image'}</td>
+                        <td class="actions-cell"></td>
+                    `;
+                    container.appendChild(row);
                 });
+            });
         }
 
         function moveToRecent(alertId) {
             if (!liveAlerts.has(alertId)) return;
             const { element } = liveAlerts.get(alertId);
             liveAlerts.delete(alertId);
-            alertTimers.delete(alertId);
             
             element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
             document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
-
-            fetch('/move_cdrrmo_to_recent', {
+            
+            fetch('/expire_cdrrmo_alert', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({alert_id: alertId})
@@ -766,7 +767,8 @@
                     });
                     
                     // Remove from UI
-                    const alertItem = alertElements.get(data.alert_id);
+                    const timer = setTimeout(() => moveToRecent(data.alert_id), 30000);
+                    liveAlerts.set(data.alert_id, { element: alertItem, timer });
                     if (alertItem) alertItem.remove();
                 };
                 form.appendChild(submitBtn);

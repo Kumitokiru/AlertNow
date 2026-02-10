@@ -163,10 +163,12 @@ def get_recent_cdrrmo_officers():
 def handle_store_cdrrmo_alert(data):
     try:
         conn = get_db_connection()
+        # Safe retrieval of timestamp
+        timestamp = data.get('timestamp') or data.get('time') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
         conn.execute('''
             INSERT OR IGNORE INTO cdrrmo_alert (alert_id, status, time, barangay, type, image)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (data['alert_id'], 'LIVE', data.get('timestamp'), data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
+        ''', (data['alert_id'], 'PENDING', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -177,20 +179,20 @@ def handle_load_cdrrmo_alerts():
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM cdrrmo_alert").fetchall()
         conn.close()
-        return [dict(row) for row in rows]
+        return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading cdrrmo alerts: {e}")
-        return []
+        return jsonify([])
 
 def handle_load_cdrrmo_expired():
     try:
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM cdrrmo_alert_expire ORDER BY time DESC").fetchall()
         conn.close()
-        return [dict(row) for row in rows]
+        return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading expired cdrrmo alerts: {e}")
-        return []
+        return jsonify([])
 
 def handle_move_cdrrmo_to_recent(alert_id):
     try:
@@ -204,8 +206,10 @@ def handle_move_cdrrmo_to_recent(alert_id):
             conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
+        return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error moving cdrrmo alert to recent: {e}")
+        return jsonify({'success': False})
 
 def handle_remove_cdrrmo_alert(alert_id):
     try:
@@ -213,5 +217,7 @@ def handle_remove_cdrrmo_alert(alert_id):
         conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
         conn.commit()
         conn.close()
+        return True
     except Exception as e:
         logger.error(f"Error removing cdrrmo alert: {e}")
+        return False

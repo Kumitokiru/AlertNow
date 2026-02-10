@@ -184,10 +184,12 @@ def get_recent_officers():
 def handle_store_barangay_alert(data):
     try:
         conn = get_db_connection()
+        # Safe retrieval of timestamp
+        timestamp = data.get('timestamp') or data.get('time') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
         conn.execute('''
             INSERT OR IGNORE INTO barangay_alert (alert_id, status, time, barangay, type, image)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (data['alert_id'], 'PENDING', data['timestamp'], data.get('barangay'), data.get('emergency_type'), data.get('image')))
+        ''', (data['alert_id'], 'PENDING', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -213,17 +215,6 @@ def handle_load_barangay_expired(barangay):
         logger.error(f"Error loading expired barangay alerts: {e}")
         return jsonify([])
 
-def handle_remove_barangay_alert(alert_id):
-    try:
-        conn = get_db_connection()
-        conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        logger.error(f"Error removing barangay alert: {e}")
-        return False
-
 def handle_move_barangay_to_recent(alert_id):
     try:
         conn = get_db_connection()
@@ -236,7 +227,18 @@ def handle_move_barangay_to_recent(alert_id):
             conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
-        return True
+        return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error moving barangay alert to recent: {e}")
+        return jsonify({'success': False})
+
+def handle_remove_barangay_alert(alert_id):
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error removing barangay alert: {e}")
         return False

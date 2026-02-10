@@ -184,10 +184,11 @@ def get_recent_pnp_officers():
 def handle_store_pnp_alert(data):
     try:
         conn = get_db_connection()
+        timestamp = data.get('timestamp') or data.get('time') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
         conn.execute('''
             INSERT OR IGNORE INTO pnp_alert (alert_id, status, time, barangay, type, image)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (data['alert_id'], 'LIVE', data.get('timestamp'), data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
+        ''', (data['alert_id'], 'PENDING', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -198,20 +199,20 @@ def handle_load_pnp_alerts():
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM pnp_alert").fetchall()
         conn.close()
-        return [dict(row) for row in rows]
+        return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading pnp alerts: {e}")
-        return []
+        return jsonify([])
 
 def handle_load_pnp_expired():
     try:
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM pnp_alert_expire ORDER BY time DESC").fetchall()
         conn.close()
-        return [dict(row) for row in rows]
+        return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading expired pnp alerts: {e}")
-        return []
+        return jsonify([])
 
 def handle_move_pnp_to_recent(alert_id):
     try:
@@ -225,8 +226,10 @@ def handle_move_pnp_to_recent(alert_id):
             conn.execute("DELETE FROM pnp_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
+        return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error moving pnp alert to recent: {e}")
+        return jsonify({'success': False})
 
 def handle_remove_pnp_alert(alert_id):
     try:
@@ -234,5 +237,7 @@ def handle_remove_pnp_alert(alert_id):
         conn.execute("DELETE FROM pnp_alert WHERE alert_id = ?", (alert_id,))
         conn.commit()
         conn.close()
+        return True
     except Exception as e:
         logger.error(f"Error removing pnp alert: {e}")
+        return False

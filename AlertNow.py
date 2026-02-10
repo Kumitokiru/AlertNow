@@ -53,25 +53,38 @@ from AgencyIn import send_dilg_password
 
 from SignUpType import download_apk_folder, generate_qr
 
-from BarangayDashboard import (get_barangay_stats, get_latest_alert, get_the_stats, get_new_alert, 
-                               get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
-                               save_officer, get_recent_officers, handle_store_barangay_alert, handle_load_barangay_alerts, 
-                               handle_load_barangay_expired, handle_move_barangay_to_recent, handle_remove_barangay_alert)
+from BarangayDashboard import (
+    get_barangay_stats, get_latest_alert, get_the_stats, get_new_alert,
+    get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
+    save_officer, get_recent_officers,
+    handle_store_barangay_alert, handle_load_barangay_alerts, 
+    handle_load_barangay_expired, handle_move_barangay_to_recent, 
+    handle_remove_barangay_alert
+)
 
-from CDRRMODashboard import (get_cdrrmo_stats, get_latest_alert, get_the_cdrrmo_stats, get_cdrrmo_new_alert, 
-                             get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
-                             save_cdrrmo_officer, get_recent_cdrrmo_officers, handle_store_cdrrmo_alert, handle_load_cdrrmo_alerts,
-                             handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent, handle_remove_cdrrmo_alert)
+from CDRRMODashboard import (
+    get_cdrrmo_stats, get_latest_alert, get_the_cdrrmo_stats, get_cdrrmo_new_alert,
+    get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
+    save_cdrrmo_officer, get_recent_cdrrmo_officers,
+    handle_store_cdrrmo_alert, handle_load_cdrrmo_alerts, 
+    handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent
+)
 
-from PNPDashboard import (get_pnp_stats, get_latest_alert, get_the_pnp_stats, get_pnp_new_alert, get_pnp_alerts_per_month, 
-                          get_pnp_responded_count, emit_pnp_alerts_per_month_update,
-                          save_pnp_officer, get_recent_pnp_officers, handle_store_pnp_alert, handle_load_pnp_alerts, 
-                          handle_load_pnp_expired, handle_move_pnp_to_recent, handle_remove_pnp_alert)
+from PNPDashboard import (
+    get_pnp_stats, get_latest_alert, get_the_pnp_stats, get_pnp_new_alert, get_pnp_alerts_per_month,
+    get_pnp_responded_count, emit_pnp_alerts_per_month_update,
+    save_pnp_officer, get_recent_pnp_officers,
+    handle_store_pnp_alert, handle_load_pnp_alerts, 
+    handle_load_pnp_expired, handle_move_pnp_to_recent
+)
 
-from BFPDashboard import (get_bfp_stats, get_latest_alert, get_the_stat_bfp, get_bfp_alerts_per_month, 
-                          get_bfp_responded_count, emit_bfp_alerts_per_month_update, 
-                          save_bfp_officer, get_recent_bfp_officers, handle_store_bfp_alert, handle_load_bfp_alerts, 
-                          handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert)
+from BFPDashboard import (
+    get_bfp_stats, get_latest_alert, get_the_stat_bfp, get_bfp_alerts_per_month,
+    get_bfp_responded_count, emit_bfp_alerts_per_month_update,
+    save_bfp_officer, get_recent_bfp_officers,
+    handle_store_bfp_alert, handle_load_bfp_alerts, 
+    handle_load_bfp_expired, handle_move_bfp_to_recent
+)
 
 from HealthDashboard import get_health_stats, get_latest_alert
 
@@ -194,42 +207,32 @@ def handle_new_alert(data):
         logger.info(f"New alert received: {data}")
         alert_id = str(uuid.uuid4())
         data['alert_id'] = alert_id
-        data['timestamp'] = datetime.utcnow().isoformat()
+        
+        # Ensure timestamp exists
+        if 'timestamp' not in data:
+            data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).isoformat()
+            
         data['resident_barangay'] = data.get('barangay', 'Unknown')
-
+        
         alerts.append(data)
         
-        handle_store_barangay_alert(data)
-
+        # Persistent Storage
+        handle_store_barangay_alert(data) 
+        
         barangay_room = f"barangay_{data.get('barangay').lower() if data.get('barangay') else ''}"
         emit('new_alert', data, room=barangay_room)
         logger.info(f"Alert emitted to room {barangay_room}")
-
+        
         map_data = {
             'lat': data.get('lat'),
             'lon': data.get('lon'),
             'barangay': data.get('barangay'),
             'emergency_type': data.get('emergency_type')
         }
-        data['expired'] = False  # Mark as live
+        data['expired'] = False
         emit('update_map', map_data, room=barangay_room)
     except Exception as e:
         logger.error(f"Error handling alert: {e}")
-    conn = get_db_connection()
-    conn.execute("""
-        INSERT OR IGNORE INTO barangay_alert
-        (alert_id, status, time, barangay, type, image)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        alert_id,
-        'PENDING',
-        data['timestamp'],
-        data.get('barangay'),
-        data.get('emergency_type'),
-        data.get('image', '')
-    ))
-    conn.commit()
-    conn.close()
 
 @socketio.on('forward_alert')
 def handle_forward_alert(data):
@@ -731,66 +734,62 @@ def handle_redirect_alert(data):
     try:
         target_role = data.get('target_role', '').lower()
         municipality = data.get('municipality', '').lower()
-        barangay = data.get('barangay', '').lower()
-
-        # Valid roles
-        valid_roles = ['bfp', 'cdrrmo', 'pnp', 'health', 'hospital']
         
+        # Ensure timestamp exists to prevent KeyErrors
+        if 'timestamp' not in data:
+             data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).isoformat()
+
+        # Store based on role (Persist to DB)
         if target_role == 'cdrrmo':
             handle_store_cdrrmo_alert(data)
         elif target_role == 'bfp':
             handle_store_bfp_alert(data)
         elif target_role == 'pnp':
             handle_store_pnp_alert(data)
-        
+            
+        valid_roles = ['bfp', 'cdrrmo', 'pnp', 'health', 'hospital']
         if target_role not in valid_roles:
-            logger.error(f"Invalid target role: {target_role}")
             return
 
-        # Emit to primary target
         room = f"{target_role}_{municipality}"
         emit('redirected_alert', data, room=room)
-
-        # Map update
+        
+        # Map Update
         map_data = {
             'lat': data.get('lat'),
             'lon': data.get('lon'),
             'barangay': data.get('barangay'),
             'emergency_type': data.get('emergency_type')
         }
-        data['expired'] = False
         emit('update_map', map_data, room=room)
-        logger.info(f"Alert redirected to {room} with map update")
 
-        # === AUTO SEND TO PNP WHEN CDRRMO OR BFP IS CHOSEN ===
+        # Auto forward to PNP logic
         if target_role in ['cdrrmo', 'bfp']:
             pnp_room = f"pnp_{municipality}"
             pnp_data = data.copy()
             pnp_data['target_role'] = 'pnp'
             
-            
-            handle_store_pnp_alert(pnp_data)
+            handle_store_pnp_alert(pnp_data) # Store for PNP too
             emit('pnp_redirect_alert', pnp_data, room=pnp_room)
             emit('update_map', map_data, room=pnp_room)
+            
+            # Send updated type info back to dashboards
             emit('update_dashboard_emergency_type', {
                 'alert_id': data.get('alert_id'),
                 'emergency_type': data.get('emergency_type'),
                 'barangay': data.get('barangay'),
                 'municipality': data.get('municipality')
             }, room=pnp_room)
-            logger.info(f"Auto forwarded to PNP: {pnp_room}")
-
-        # === CRITICAL: SEND update_dashboard_emergency_type BACK TO BARANGAY ===
-        # This triggers dropdowns on BarangayDashboard after clicking "Send to BFP & PNP"
+            
+        # Send updated type info back to Barangay Dashboard
         if target_role in ['bfp', 'cdrrmo']:
-            barangay_room = f"barangay_{barangay}"
-            emit('update_dashboard_emergency_type', {
+             barangay_room = f"barangay_{data.get('barangay', '').lower()}"
+             emit('update_dashboard_emergency_type', {
                 'alert_id': data.get('alert_id'),
                 'emergency_type': data.get('emergency_type'),
                 'barangay': data.get('barangay'),
                 'municipality': data.get('municipality')
             }, room=barangay_room)
-            logger.info(f"Dropdown trigger sent back to Barangay: {barangay_room}")
 
     except Exception as e:
         logger.error(f"Error in handle_redirect_alert: {e}")
@@ -2488,58 +2487,6 @@ def delete_pnp_alert_route():
     except Exception as e:
         logger.error(f"Error deleting pnp alert: {e}")
         return jsonify({'success': False, 'error': str(e)})
-    
-# Barangay Routes
-@app.route('/remove_barangay_alert', methods=['POST'])
-def remove_barangay_alert():
-    data = request.json
-    handle_remove_barangay_alert(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-@app.route('/move_barangay_to_recent', methods=['POST'])
-def move_barangay_to_recent_route():
-    data = request.json
-    handle_move_barangay_to_recent(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-# BFP Routes
-@app.route('/remove_bfp_alert', methods=['POST'])
-def remove_bfp_alert():
-    data = request.json
-    handle_remove_bfp_alert(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-@app.route('/move_bfp_to_recent', methods=['POST'])
-def move_bfp_to_recent_route():
-    data = request.json
-    handle_move_bfp_to_recent(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-# CDRRMO Routes
-@app.route('/remove_cdrrmo_alert', methods=['POST'])
-def remove_cdrrmo_alert():
-    data = request.json
-    handle_remove_cdrrmo_alert(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-@app.route('/move_cdrrmo_to_recent', methods=['POST'])
-def move_cdrrmo_to_recent_route():
-    data = request.json
-    handle_move_cdrrmo_to_recent(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-# PNP Routes
-@app.route('/remove_pnp_alert', methods=['POST'])
-def remove_pnp_alert():
-    data = request.json
-    handle_remove_pnp_alert(data.get('alert_id'))
-    return jsonify({"status": "success"})
-
-@app.route('/move_pnp_to_recent', methods=['POST'])
-def move_pnp_to_recent_route():
-    data = request.json
-    handle_move_pnp_to_recent(data.get('alert_id'))
-    return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'users_web.db')
@@ -2849,93 +2796,36 @@ if __name__ == '__main__':
                 created_at TEXT
             );
         ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS barangay_alert (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS barangay_alert_expire (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS cdrrmo_alert (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS cdrrmo_alert_expire (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS bfp_alert (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS bfp_alert_expire (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS pnp_alert (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS pnp_alert_expire (
-                alert_id TEXT PRIMARY KEY,
-                status TEXT,
-                time TEXT,
-                barangay TEXT,
-                type TEXT,
-                image TEXT
-            );
-            ''')
+        c.execute('''CREATE TABLE IF NOT EXISTS barangay_alert (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS barangay_alert_expire (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
 
+        # CDRRMO
+        c.execute('''CREATE TABLE IF NOT EXISTS cdrrmo_alert (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS cdrrmo_alert_expire (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
 
+        # BFP
+        c.execute('''CREATE TABLE IF NOT EXISTS bfp_alert (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS bfp_alert_expire (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
 
-
-
-
-
+        # PNP
+        c.execute('''CREATE TABLE IF NOT EXISTS pnp_alert (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS pnp_alert_expire (
+            alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
+        )''')
         conn.commit()
         conn.close()
         logger.info("barangay_response initialized successfully in users_web.db")
