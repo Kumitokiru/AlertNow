@@ -144,7 +144,7 @@ main {
 
 .main-content {
     position: fixed; /* Fix the element to the viewport */
-    top: -11px;/* Anchor to the top */
+    top: -15px;/* Anchor to the top */
     left: -14%;  /* Start from the left edge */
     height: 95%; /* Match original height */
     overflow: auto; /* Enable scrolling for overflow */
@@ -434,14 +434,62 @@ main {
     background: #0056b3;
 }
 
+/* WELCOME MESSAGE STYLING FOR BFP, CDRRMO, PNP */
 .header-welcome-text {
-    margin-left: 15px;
-    margin-right: 5px;
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 2rem;
-    display: inline-flex;
+    position: absolute;
+    right: 30px; 
+    top: 0px; 
+    display: flex;
     align-items: center;
+    gap: 15px; 
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+}
+
+.header-welcome-text .welcome-word {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.header-welcome-text .details {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+}
+
+.header-welcome-text .position-text {
+    font-size: 1.2rem;
+    font-weight: normal;
+}
+
+.header-welcome-text .name-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    align-self: center;
+}
+
+.header-welcome-cdrrmo {
+    position: absolute;
+    right: 100px; 
+    top: 10px; 
+    display: flex;
+    align-items: center;
+    gap: 35px; 
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+}
+
+.header-welcome-cdrrmo .welcome-word {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.header-welcome-cdrrmo .name-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
 }
 
 @keyframes fadeIn {

@@ -184,7 +184,6 @@ def get_recent_officers():
 def handle_store_barangay_alert(data):
     try:
         conn = get_db_connection()
-        # Safe retrieval of timestamp
         timestamp = data.get('timestamp') or data.get('time') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
         conn.execute('''
             INSERT OR IGNORE INTO barangay_alert (alert_id, status, time, barangay, type, image)
@@ -200,6 +199,7 @@ def handle_load_barangay_alerts(barangay):
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM barangay_alert WHERE barangay = ?", (barangay,)).fetchall()
         conn.close()
+        # Convert row objects to dicts
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading barangay alerts: {e}")
@@ -208,6 +208,7 @@ def handle_load_barangay_alerts(barangay):
 def handle_load_barangay_expired(barangay):
     try:
         conn = get_db_connection()
+        # Order by time DESC so newest expired alerts are at the top
         rows = conn.execute("SELECT * FROM barangay_alert_expire WHERE barangay = ? ORDER BY time DESC", (barangay,)).fetchall()
         conn.close()
         return jsonify([dict(row) for row in rows])
@@ -218,19 +219,28 @@ def handle_load_barangay_expired(barangay):
 def handle_move_barangay_to_recent(alert_id):
     try:
         conn = get_db_connection()
+        # 1. Fetch the alert from the live table
         alert = conn.execute("SELECT * FROM barangay_alert WHERE alert_id = ?", (alert_id,)).fetchone()
+        
         if alert:
+            # 2. Insert into the expire table
             conn.execute('''
                 INSERT OR IGNORE INTO barangay_alert_expire (alert_id, status, time, barangay, type, image)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+            
+            # 3. Delete from the live table
             conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
-        conn.close()
-        return jsonify({'success': True})
+            conn.close()
+            return jsonify({'success': True})
+        else:
+            conn.close()
+            # It might have already been moved or didn't exist
+            return jsonify({'success': False, 'message': 'Alert not found in live table'})
     except Exception as e:
         logger.error(f"Error moving barangay alert to recent: {e}")
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': str(e)})
 
 def handle_remove_barangay_alert(alert_id):
     try:

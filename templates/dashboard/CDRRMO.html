@@ -67,31 +67,46 @@
             });
 
         function setOfficer() {
+            // Only get Name, as CDRRMO doesn't have a Position field
             const name = document.getElementById('officerName').value.trim();
+            
             if (!name) {
                 alert("Please enter a name.");
                 return;
             }
+
+            // Hide the modal
             document.getElementById('officerModal').style.display = 'none';
-            
+
+            // Save to database (using your specific CDRRMO endpoint)
             fetch('/save_cdrrmo_officer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
-            }).then(() => loadRecentOfficers());
+            }).then(() => {
+                if (typeof loadRecentOfficers === "function") {
+                    loadRecentOfficers();
+                }
+            });
 
-            const welcomeMsg = `Welcome ${name}`;
-            
-            // Insert into Header
-            const sidebarToggle = document.querySelector('.toggle-btn');
-            const welcomeSpan = document.createElement('span');
-            welcomeSpan.className = 'header-welcome-text';
-            welcomeSpan.innerText = welcomeMsg;
-            if (sidebarToggle && sidebarToggle.parentNode) {
-                sidebarToggle.parentNode.insertBefore(welcomeSpan, sidebarToggle.nextSibling);
-            } else {
-                const header = document.querySelector('header');
-                header.prepend(welcomeSpan);
+            // Create the structured Welcome Display (without Position)
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'header-welcome-cdrrmo';
+            welcomeDiv.innerHTML = `
+                <span class="welcome-word">Welcome</span>
+                <div class="details">
+                    <span class="name-text">${name}</span>
+                </div>
+            `;
+
+            // Target the header
+            const header = document.querySelector('header');
+            if (header) {
+                // Remove any existing welcome message first
+                const existing = header.querySelector('.header-welcome-text');
+                if (existing) existing.remove();
+                
+                header.appendChild(welcomeDiv);
             }
         }
 

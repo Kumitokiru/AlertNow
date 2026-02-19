@@ -57,8 +57,8 @@ from BarangayDashboard import (
     get_barangay_stats, get_latest_alert, get_the_stats, get_new_alert,
     get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
     save_officer, get_recent_officers,
-    handle_store_barangay_alert, handle_load_barangay_alerts, 
-    handle_load_barangay_expired, handle_move_barangay_to_recent, 
+    handle_store_barangay_alert, handle_load_barangay_alerts,
+    handle_load_barangay_expired, handle_move_barangay_to_recent,  # Ensure this is imported
     handle_remove_barangay_alert
 )
 
@@ -2357,6 +2357,9 @@ def load_barangay_expired_route():
 @app.route('/expire_barangay_alert', methods=['POST'])
 def expire_barangay_alert_route():
     data = request.get_json()
+    if not data or 'alert_id' not in data:
+        return jsonify({'error': 'Missing alert_id'}), 400
+    # Calls the function in BarangayDashboard.py to move record to expire table
     return handle_move_barangay_to_recent(data['alert_id'])
 
 # CDRRMO

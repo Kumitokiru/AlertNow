@@ -70,31 +70,34 @@ function updateTotalIncidents() {
 function setOfficer() {
     const position = document.getElementById('officerPosition').value;
     const name = document.getElementById('officerName').value.trim();
-
     if (!position || !name) {
         alert("Please select a position and enter a name.");
         return;
     }
     document.getElementById('officerModal').style.display = 'none';
-    
-    fetch('/save_bfp_officer', {
+
+    // Save to DB
+    fetch('/save_officer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position, name })
     }).then(() => loadRecentOfficers());
 
-    const welcomeMsg = `Welcome ${position} ${name}`;
-    
-    // Insert into Header
-    const sidebarToggle = document.querySelector('.toggle-btn');
-    const welcomeSpan = document.createElement('span');
+    // Create Structured Welcome Display
+    const welcomeSpan = document.createElement('div');
     welcomeSpan.className = 'header-welcome-text';
-    welcomeSpan.innerText = welcomeMsg;
-    if (sidebarToggle && sidebarToggle.parentNode) {
-        sidebarToggle.parentNode.insertBefore(welcomeSpan, sidebarToggle.nextSibling);
-    } else {
-        const header = document.querySelector('header');
-        header.prepend(welcomeSpan);
+    welcomeSpan.innerHTML = `
+        <span class="welcome-word">Welcome</span>
+        <div class="details">
+            <span class="position-text">${position}</span>
+            <span class="name-text">${name}</span>
+        </div>
+    `;
+
+    // Append to Header
+    const header = document.querySelector('header');
+    if (header) {
+        header.appendChild(welcomeSpan);
     }
 }
 
