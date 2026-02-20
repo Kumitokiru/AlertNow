@@ -1,0 +1,362 @@
+<script>
+    // ==========================================
+    // ROAD ACCIDENT CHARTS
+    // ==========================================
+    let yearlyPredictionChart = null;
+    let monthlyComparisonChart = null;
+    let julDecChart = null;
+
+    // ==========================================
+    // FIRE INCIDENT CHARTS
+    // ==========================================
+    let fireYearlyChart = null;
+    let fireMonthlyChart = null;
+    let fireJulDecChart = null;
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    function random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function parsePrediction(full, monthly, julDec) {
+        const fullMatch = full.match(/(\d+\.\d+)%/);
+        const monthlyMatch = monthly.match(/(\d+\.\d+)%/);
+        const julDecMatch = julDec.match(/(\d+\.\d+)%/);
+        return {
+            full: fullMatch ? parseFloat(fullMatch[1]) : 50,
+            monthly: monthlyMatch ? parseFloat(monthlyMatch[1]) : 60,
+            julDec: julDecMatch ? parseFloat(julDecMatch[1]) : 70
+        };
+    }
+
+    // ==========================================
+    // UPDATE FUNCTIONS
+    // ==========================================
+    function updateRoadCharts(data) {
+        const fullText = data.full_year || "2023 Full Year: 50.0% Risk";
+        const monthlyText = data.monthly || "2023 Monthly: 60.0% Risk";
+        const julDecText = data.jul_dec || "July-Dec 2023: 70.0% Risk";
+        const { full, monthly, julDec } = parsePrediction(fullText, monthlyText, julDecText);
+
+        let full2023Count = Math.round((full / 100) * 150);
+        let monthly2023Count = Math.round((monthly / 100) * 150);
+        let julDec2023Count = Math.round((julDec / 100) * 90);
+
+        full2023Count += Math.round(random(-12, 15));
+        monthly2023Count += Math.round(random(-15, 18));
+        julDec2023Count += Math.round(random(-18, 20));
+
+        full2023Count = Math.max(60, Math.min(190, full2023Count));
+        monthly2023Count = Math.max(70, Math.min(180, monthly2023Count));
+        julDec2023Count = Math.max(50, Math.min(130, julDec2023Count));
+
+        if (yearlyPredictionChart) {
+            yearlyPredictionChart.data.datasets[0].data[3] = full2023Count;
+            yearlyPredictionChart.options.plugins.title.text = fullText;
+            yearlyPredictionChart.update('active');
+        }
+
+        if (monthlyComparisonChart) {
+            const base2022 = [28,32,35,30,40,38,42,45,41,36,33,30];
+            const monthly2023 = base2022.map(v => {
+                const ratio = monthly2023Count / 92;
+                const variation = random(-18, 22);
+                return Math.max(0, Math.round(v * ratio + variation));
+            });
+            monthlyComparisonChart.data.datasets[1].data = monthly2023;
+            monthlyComparisonChart.options.plugins.title.text = monthlyText;
+            monthlyComparisonChart.update('active');
+        }
+
+        if (julDecChart) {
+            const baseJulDec2022 = [42,45,41,36,33,30];
+            const forecastJulDec = baseJulDec2022.map(v => {
+                const ratio = julDec2023Count / 75;
+                const variation = random(-20, 25);
+                return Math.max(0, Math.round(v * ratio + variation));
+            });
+            julDecChart.data.datasets[1].data = [null,null,null,null,null,null,...forecastJulDec];
+            julDecChart.options.plugins.title.text = julDecText;
+            julDecChart.update('active');
+        }
+        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateFireCharts(data) {
+        const arimaFull    = data.arima_full    || "Fire 2023 Full Year (ARIMA): 50.0% Risk";
+        const arimaMonthly = data.arima_monthly || "Fire 2023 Monthly (ARIMA): 60.0% Risk";
+        const arimaJulDec  = data.arima_jul_dec || "Fire July-Dec 2023 (ARIMA): 70.0% Risk";
+        const arimaxFull    = data.arimax_full    || "Fire 2023 Full Year (ARIMAX): 50.0% Risk";
+        const arimaxMonthly = data.arimax_monthly || "Fire 2023 Monthly (ARIMAX): 60.0% Risk";
+        const arimaxJulDec  = data.arimax_jul_dec || "Fire July-Dec 2023 (ARIMAX): 70.0% Risk";
+        const sarimaFull    = data.sarima_full    || "Fire 2023 Full Year (SARIMA): 50.0% Risk";
+        const sarimaMonthly = data.sarima_monthly || "Fire 2023 Monthly (SARIMA): 60.0% Risk";
+        const sarimaJulDec  = data.sarima_jul_dec || "Fire July-Dec 2023 (SARIMA): 70.0% Risk";
+        const sarimaxFull    = data.sarimax_full    || "Fire 2023 Full Year (SARIMAX): 50.0% Risk";
+        const sarimaxMonthly = data.sarimax_monthly || "Fire 2023 Monthly (SARIMAX): 60.0% Risk";
+        const sarimaxJulDec  = data.sarimax_jul_dec || "Fire July-Dec 2023 (SARIMAX): 70.0% Risk";
+
+        const arima   = parsePrediction(arimaFull,    arimaMonthly,   arimaJulDec);
+        const arimax  = parsePrediction(arimaxFull,   arimaxMonthly,  arimaxJulDec);
+        const sarima  = parsePrediction(sarimaFull,   sarimaMonthly,  sarimaJulDec);
+        const sarimax = parsePrediction(sarimaxFull,  sarimaxMonthly, sarimaxJulDec);
+
+        const arimaFullRand    = Math.round(random(-15, 18));
+        const arimaxFullRand   = Math.round(random(-15, 18));
+        const sarimaFullRand   = Math.round(random(-15, 18));
+        const sarimaxFullRand  = Math.round(random(-15, 18));
+        const arimaMonthRand   = Math.round(random(-18, 22));
+        const arimaxMonthRand  = Math.round(random(-18, 22));
+        const sarimaMonthRand  = Math.round(random(-18, 22));
+        const sarimaxMonthRand = Math.round(random(-18, 22));
+        const arimaJulRand     = Math.round(random(-20, 25));
+        const arimaxJulRand    = Math.round(random(-20, 25));
+        const sarimaJulRand    = Math.round(random(-20, 25));
+        const sarimaxJulRand   = Math.round(random(-20, 25));
+
+        const arimaFullCount    = Math.round((arima.full    / 100) * 150) + arimaFullRand;
+        const arimaxFullCount   = Math.round((arimax.full   / 100) * 150) + arimaxFullRand;
+        const sarimaFullCount   = Math.round((sarima.full   / 100) * 150) + sarimaFullRand;
+        const sarimaxFullCount  = Math.round((sarimax.full  / 100) * 150) + sarimaxFullRand;
+        const arimaMonthlyCount  = Math.round((arima.monthly  / 100) * 150) + arimaMonthRand;
+        const arimaxMonthlyCount = Math.round((arimax.monthly / 100) * 150) + arimaxMonthRand;
+        const sarimaMonthlyCount = Math.round((sarima.monthly / 100) * 150) + sarimaMonthRand;
+        const sarimaxMonthlyCount = Math.round((sarimax.monthly/ 100) * 150) + sarimaxMonthRand;
+        const arimaJulDecCount   = Math.round((arima.julDec   / 100) * 90) + arimaJulRand;
+        const arimaxJulDecCount  = Math.round((arimax.julDec  / 100) * 90) + arimaxJulRand;
+        const sarimaJulDecCount  = Math.round((sarima.julDec  / 100) * 90) + sarimaJulRand;
+        const sarimaxJulDecCount = Math.round((sarimax.julDec / 100) * 90) + sarimaxJulRand;
+
+        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+        if (fireYearlyChart) {
+            fireYearlyChart.data.datasets[0].data[3] = 48;
+            fireYearlyChart.data.datasets[1].data[3] = clamp(arimaFullCount,   60, 190);
+            fireYearlyChart.data.datasets[2].data[3] = clamp(arimaxFullCount,  60, 190);
+            fireYearlyChart.data.datasets[3].data[3] = clamp(sarimaFullCount,  60, 190);
+            fireYearlyChart.data.datasets[4].data[3] = clamp(sarimaxFullCount, 60, 190);
+            fireYearlyChart.options.plugins.title.text = `Fire Yearly - ARIMA: ${arima.full.toFixed(1)}% | ARIMAX: ${arimax.full.toFixed(1)}% | SARIMA: ${sarima.full.toFixed(1)}% | SARIMAX: ${sarimax.full.toFixed(1)}%`;
+            fireYearlyChart.update('active');
+        }
+
+        if (fireMonthlyChart) {
+            const base2022Fire = [15,18,22,16,25,20,28,30,26,22,19,17];
+            const arimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const arimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+
+            fireMonthlyChart.data.datasets[0].data = base2022Fire;
+            fireMonthlyChart.data.datasets[1].data = arimaMonthly2023;
+            fireMonthlyChart.data.datasets[2].data = arimaxMonthly2023;
+            fireMonthlyChart.data.datasets[3].data = sarimaMonthly2023;
+            fireMonthlyChart.data.datasets[4].data = sarimaxMonthly2023;
+            fireMonthlyChart.options.plugins.title.text = `Fire Monthly - ARIMA: ${arima.monthly.toFixed(1)}% | ARIMAX: ${arimax.monthly.toFixed(1)}% | SARIMA: ${sarima.monthly.toFixed(1)}% | SARIMAX: ${sarimax.monthly.toFixed(1)}%`;
+            fireMonthlyChart.update('active');
+        }
+
+        if (fireJulDecChart) {
+            const baseJulDecFire = [28,30,26,22,19,17];
+            const arimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const arimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+
+            fireJulDecChart.data.datasets[0].data = [null,null,null,null,null,null,...baseJulDecFire];
+            fireJulDecChart.data.datasets[1].data = [null,null,null,null,null,null,...arimaJulDec2023];
+            fireJulDecChart.data.datasets[2].data = [null,null,null,null,null,null,...arimaxJulDec2023];
+            fireJulDecChart.data.datasets[3].data = [null,null,null,null,null,null,...sarimaJulDec2023];
+            fireJulDecChart.data.datasets[4].data = [null,null,null,null,null,null,...sarimaxJulDec2023];
+            fireJulDecChart.options.plugins.title.text = `Fire Jul-Dec - ARIMA: ${arima.julDec.toFixed(1)}% | ARIMAX: ${arimax.julDec.toFixed(1)}% | SARIMA: ${sarima.julDec.toFixed(1)}% | SARIMAX: ${sarimax.julDec.toFixed(1)}%`;
+            fireJulDecChart.update('active');
+        }
+        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // INITIALIZATION FUNCTION
+    // ==========================================
+    function initializeCharts() {
+        yearlyPredictionChart = new Chart('yearlyPredictionChart', {
+            type: 'line',
+            data: {
+                labels: ['2020','2021','2022','2023 (Predicted)'],
+                datasets: [{
+                    label: 'Road Accidents',
+                    data: [45,68,92,92],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231,76,60,0.2)',
+                    borderWidth: 7,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1800 },
+                plugins: {
+                    title: { display: true, text: '2023 Full Year Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }
+                }
+            }
+        });
+
+        monthlyComparisonChart = new Chart('monthlyComparisonChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Actual', data: [28,32,35,30,40,38,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
+                    { label: '2023 Forecast', data: [30,28,33,32,38,40,45,48,43,38,35,32], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: '2023 Monthly Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }
+                }
+            }
+        });
+
+        julDecChart = new Chart('julDecChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Jul–Dec', data: [null,null,null,null,null,null,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
+                    { label: '2023 Jul–Dec Forecast', data: [null,null,null,null,null,null,45,50,48,42,39,36], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.2)', fill: true }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'July–Dec 2023 Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }
+                }
+            }
+        });
+
+        fetch('/get_latest_prediction')
+            .then(r => r.json())
+            .then(d => {
+                const pred = d.prediction || "2023 Full Year: 50.0% Risk | 2023 Monthly: 60.0% Risk | July-Dec 2023: 70.0% Risk";
+                const [full, monthly, jul] = pred.split('|').map(s => s.trim());
+                updateRoadCharts({ full_year: full, monthly: monthly, jul_dec: jul });
+            });
+
+        fireYearlyChart = new Chart('fireYearlyChart', {
+            type: 'line',
+            data: {
+                labels: ['2020','2021','2022','2023 (Predicted)'],
+                datasets: [
+                    { label: '2022 Actual', data: [20,35,48,48], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1800 },
+                plugins: {
+                    title: { display: true, text: 'Fire - 2023 Full Year Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' },
+                    legend: { position: 'top', labels: { font: { size: 14 } } }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        fireMonthlyChart = new Chart('fireMonthlyChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Actual', data: [15,18,22,16,25,20,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1800 },
+                plugins: {
+                    title: { display: true, text: 'Fire - 2023 Monthly Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' },
+                    legend: { position: 'top', labels: { font: { size: 14 } } }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        fireJulDecChart = new Chart('fireJulDecChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Jul–Dec Actual', data: [null,null,null,null,null,null,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1800 },
+                plugins: {
+                    title: { display: true, text: 'Fire - July–Dec 2023 Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' },
+                    legend: { position: 'top', labels: { font: { size: 14 } } }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        fetch('/get_latest_fire_prediction')
+            .then(r => r.json())
+            .then(d => {
+                let pred = d.prediction || "Fire 2023 Full Year: 50.0% Risk | Fire 2023 Monthly: 60.0% Risk | Fire July-Dec 2023: 70.0% Risk";
+                if (pred.startsWith('{')) {
+                    try {
+                        const jsonPred = JSON.parse(pred);
+                        const full    = jsonPred.sarima?.full_year  || jsonPred.arima?.full_year  || "Fire 2023 Full Year: 50.0% Risk";
+                        const monthly = jsonPred.sarima?.monthly    || jsonPred.arima?.monthly    || "Fire 2023 Monthly: 60.0% Risk";
+                        const julDec  = jsonPred.sarima?.jul_dec    || jsonPred.arima?.jul_dec    || "Fire July-Dec 2023: 70.0% Risk";
+                        updateFireCharts({
+                            fire_full: full,
+                            fire_monthly: monthly,
+                            fire_jul_dec: julDec,
+                            arima_full: jsonPred.arima?.full_year,
+                            arimax_full: jsonPred.arimax?.full_year,
+                            sarima_full: jsonPred.sarima?.full_year,
+                            sarimax_full: jsonPred.sarimax?.full_year,
+                        });
+                        return;
+                    } catch (e) {
+                        console.warn("Failed to parse JSON prediction, falling back to string split", e);
+                    }
+                }
+                const [full, monthly, julDec] = pred.split('|').map(s => s.trim());
+                updateFireCharts({
+                    fire_full: full,
+                    fire_monthly: monthly,
+                    fire_jul_dec: julDec
+                });
+            })
+            .catch(err => {
+                console.error("Failed to fetch latest fire prediction:", err);
+                updateFireCharts({
+                    fire_full: "Fire 2023 Full Year: 50.0% Risk",
+                    fire_monthly: "Fire 2023 Monthly: 60.0% Risk",
+                    fire_jul_dec: "Fire July-Dec 2023: 70.0% Risk"
+                });
+            });
+    }
+</script>

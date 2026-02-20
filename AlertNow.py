@@ -58,7 +58,7 @@ from BarangayDashboard import (
     get_barangay_emergency_types, get_barangay_responded_count, emit_emergency_types_update,
     save_officer, get_recent_officers,
     handle_store_barangay_alert, handle_load_barangay_alerts,
-    handle_load_barangay_expired, handle_move_barangay_to_recent,  # Ensure this is imported
+    handle_load_barangay_expired, handle_move_barangay_to_recent, handle_update_barangay_alert_type, # Ensure this is imported
     handle_remove_barangay_alert
 )
 
@@ -2343,6 +2343,18 @@ def save_pnp_officer_handler():
 @app.route('/get_recent_pnp_officers')
 def get_recent_pnp_officers_handler():
     return get_recent_pnp_officers()
+
+@app.route('/update_barangay_alert_type', methods=['POST'])
+def update_barangay_alert_type_route():
+    """Updates the emergency type for a pending barangay alert."""
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    emergency_type = data.get('emergency_type')
+    if not all([alert_id, emergency_type]):
+        logger.warning(f"Update alert type failed. Missing data: {data}")
+        return jsonify({'success': False, 'error': 'Missing alert_id or emergency_type'}), 400
+    
+    return handle_update_barangay_alert_type(alert_id, emergency_type)
 
 @app.route('/load_barangay_alerts')
 def load_barangay_alerts_route():

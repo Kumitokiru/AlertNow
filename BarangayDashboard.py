@@ -194,24 +194,58 @@ def handle_store_barangay_alert(data):
     except Exception as e:
         logger.error(f"Error storing barangay alert: {e}")
 
-def handle_load_barangay_alerts():
-    # Load unaccepted alerts from the barangay_alert table
-    conn = get_db_connection()
-    barangay = session.get('barangay')
-    alerts = conn.execute('SELECT * FROM barangay_alert WHERE barangay = ?', (barangay,)).fetchall()
-    conn.close()
-    return jsonify([dict(ix) for ix in alerts])
+def handle_load_barangay_alerts(barangay):
+    """Load unaccepted alerts from the barangay_alert table for a specific barangay."""
+    try:
+        conn = get_db_connection()
+        alerts = conn.execute('SELECT * FROM barangay_alert WHERE barangay = ?', (barangay,)).fetchall()
+        conn.close()
+        return jsonify([dict(ix) for ix in alerts])
+    except Exception as e:
+        logger.error(f"Error loading live barangay alerts for {barangay}: {e}")
+        return jsonify([])
 
 def handle_load_barangay_expired(barangay):
     try:
         conn = get_db_connection()
-        # Order by time DESC so newest expired alerts are at the top
-        rows = conn.execute("SELECT * FROM barangay_alert_expire WHERE barangay = ? ORDER BY time DESC", (barangay,)).fetchall()
+        # Join with response tables to determine if an expired alert was actually responded to.
+        query = """
+            SELECT 
+                e.*,
+                CASE 
+                    WHEN r.alert_id IS NOT NULL OR rf.alert_id IS NOT NULL OR rc.alert_id IS NOT NULL OR rh.alert_id IS NOT NULL THEN 'RESPONDED'
+                    ELSE 'EXPIRED'
+                END as final_status
+            FROM barangay_alert_expire e
+            LEFT JOIN barangay_response r ON e.alert_id = r.alert_id
+            LEFT JOIN barangay_fire_response rf ON e.alert_id = rf.alert_id
+            LEFT JOIN barangay_crime_response rc ON e.alert_id = rc.alert_id
+            LEFT JOIN barangay_health_response rh ON e.alert_id = rh.alert_id
+            WHERE e.barangay = ?
+            GROUP BY e.alert_id
+            ORDER BY e.time DESC
+        """
+        rows = conn.execute(query, (barangay,)).fetchall()
         conn.close()
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading expired barangay alerts: {e}")
         return jsonify([])
+
+def handle_update_barangay_alert_type(alert_id, emergency_type):
+    """Updates the 'type' of a pending alert in the barangay_alert table."""
+    try:
+        conn = get_db_connection()
+        conn.execute("UPDATE barangay_alert SET type = ? WHERE alert_id = ?", (emergency_type, alert_id))
+        conn.commit()
+        conn.close()
+        logger.info(f"Updated alert {alert_id} type to {emergency_type}")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error updating barangay alert type: {e}")
+        conn.close()
+        return jsonify({'success': False, 'error': str(e)})
+
 
 def handle_move_barangay_to_recent(alert_id):
     try:
