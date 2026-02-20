@@ -149,6 +149,7 @@ def get_recent_bfp_officers():
     ])
     
 def handle_store_bfp_alert(data):
+    """Store incoming alert to bfp_alert table"""
     try:
         conn = get_db_connection()
         timestamp = data.get('timestamp') or data.get('time') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
@@ -158,52 +159,84 @@ def handle_store_bfp_alert(data):
         ''', (data['alert_id'], 'PENDING', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image', '')))
         conn.commit()
         conn.close()
+        logger.info(f"Stored BFP alert: {data['alert_id']}")
     except Exception as e:
         logger.error(f"Error storing bfp alert: {e}")
 
 def handle_load_bfp_alerts():
+    """Load all pending alerts from bfp_alert table"""
     try:
+        logger.info("Loading BFP alerts from bfp_alert table")
         conn = get_db_connection()
-        rows = conn.execute("SELECT * FROM bfp_alert").fetchall()
+        rows = conn.execute("SELECT * FROM bfp_alert ORDER BY time DESC").fetchall()
         conn.close()
+        logger.info(f"Found {len(rows)} BFP alerts")
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading bfp alerts: {e}")
         return jsonify([])
 
 def handle_load_bfp_expired():
+    """Load all expired/submitted alerts from bfp_alert_expire table"""
     try:
+        logger.info("Loading expired BFP alerts from bfp_alert_expire table")
         conn = get_db_connection()
-        rows = conn.execute("SELECT * FROM bfp_alert_expire ORDER BY time DESC").fetchall()
+        # Join with bfp_response to determine if expired alert was responded
+        query = """
+            SELECT 
+                e.*,
+                CASE 
+                    WHEN r.alert_id IS NOT NULL THEN 'RESPONDED'
+                    ELSE 'EXPIRED'
+                END as final_status
+            FROM bfp_alert_expire e
+            LEFT JOIN bfp_response r ON e.alert_id = r.alert_id
+            GROUP BY e.alert_id
+            ORDER BY e.time DESC
+        """
+        rows = conn.execute(query).fetchall()
         conn.close()
+        logger.info(f"Found {len(rows)} expired BFP alerts")
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading expired bfp alerts: {e}")
         return jsonify([])
 
 def handle_move_bfp_to_recent(alert_id):
+    """Move alert from bfp_alert to bfp_alert_expire after 30 seconds"""
     try:
         conn = get_db_connection()
+        # 1. Fetch the alert from live table
         alert = conn.execute("SELECT * FROM bfp_alert WHERE alert_id = ?", (alert_id,)).fetchone()
+        
         if alert:
+            # 2. Insert into expire table
             conn.execute('''
                 INSERT OR IGNORE INTO bfp_alert_expire (alert_id, status, time, barangay, type, image)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+            
+            # 3. Delete from live table
             conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
-        conn.close()
-        return jsonify({'success': True})
+            conn.close()
+            logger.info(f"Moved BFP alert {alert_id} from live to expired table")
+            return jsonify({'success': True})
+        else:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Alert not found in live table'})
     except Exception as e:
         logger.error(f"Error moving bfp alert to recent: {e}")
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': str(e)})
 
 def handle_remove_bfp_alert(alert_id):
+    """Remove alert from bfp_alert table (called on decline or submit)"""
     try:
         conn = get_db_connection()
         conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
         conn.commit()
         conn.close()
+        logger.info(f"Removed BFP alert {alert_id} from bfp_alert table")
         return True
     except Exception as e:
         logger.error(f"Error removing bfp alert: {e}")
