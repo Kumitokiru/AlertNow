@@ -197,9 +197,11 @@ def handle_store_barangay_alert(data):
 def handle_load_barangay_alerts(barangay):
     """Load unaccepted alerts from the barangay_alert table for a specific barangay."""
     try:
+        logger.info(f"Loading barangay alerts for: {barangay}")
         conn = get_db_connection()
         alerts = conn.execute('SELECT * FROM barangay_alert WHERE barangay = ?', (barangay,)).fetchall()
         conn.close()
+        logger.info(f"Found {len(alerts)} alerts for barangay: {barangay}")
         return jsonify([dict(ix) for ix in alerts])
     except Exception as e:
         logger.error(f"Error loading live barangay alerts for {barangay}: {e}")
@@ -207,6 +209,7 @@ def handle_load_barangay_alerts(barangay):
 
 def handle_load_barangay_expired(barangay):
     try:
+        logger.info(f"Loading expired alerts for barangay: {barangay}")
         conn = get_db_connection()
         # Join with response tables to determine if an expired alert was actually responded to.
         query = """
@@ -227,6 +230,7 @@ def handle_load_barangay_expired(barangay):
         """
         rows = conn.execute(query, (barangay,)).fetchall()
         conn.close()
+        logger.info(f"Found {len(rows)} expired alerts for barangay: {barangay}")
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         logger.error(f"Error loading expired barangay alerts: {e}")
@@ -246,7 +250,6 @@ def handle_update_barangay_alert_type(alert_id, emergency_type):
         conn.close()
         return jsonify({'success': False, 'error': str(e)})
 
-
 def handle_move_barangay_to_recent(alert_id):
     try:
         conn = get_db_connection()
@@ -264,6 +267,7 @@ def handle_move_barangay_to_recent(alert_id):
             conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
             conn.close()
+            logger.info(f"Moved alert {alert_id} from live to expired table")
             return jsonify({'success': True})
         else:
             conn.close()
@@ -279,6 +283,7 @@ def handle_remove_barangay_alert(alert_id):
         conn.execute("DELETE FROM barangay_alert WHERE alert_id = ?", (alert_id,))
         conn.commit()
         conn.close()
+        logger.info(f"Removed alert {alert_id} from barangay_alert table")
         return True
     except Exception as e:
         logger.error(f"Error removing barangay alert: {e}")
