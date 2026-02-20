@@ -194,16 +194,13 @@ def handle_store_barangay_alert(data):
     except Exception as e:
         logger.error(f"Error storing barangay alert: {e}")
 
-def handle_load_barangay_alerts(barangay):
-    try:
-        conn = get_db_connection()
-        rows = conn.execute("SELECT * FROM barangay_alert WHERE barangay = ?", (barangay,)).fetchall()
-        conn.close()
-        # Convert row objects to dicts
-        return jsonify([dict(row) for row in rows])
-    except Exception as e:
-        logger.error(f"Error loading barangay alerts: {e}")
-        return jsonify([])
+def handle_load_barangay_alerts():
+    # Load unaccepted alerts from the barangay_alert table
+    conn = get_db_connection()
+    barangay = session.get('barangay')
+    alerts = conn.execute('SELECT * FROM barangay_alert WHERE barangay = ?', (barangay,)).fetchall()
+    conn.close()
+    return jsonify([dict(ix) for ix in alerts])
 
 def handle_load_barangay_expired(barangay):
     try:
