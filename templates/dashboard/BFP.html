@@ -1,903 +1,577 @@
 <script>
-let menuData = {
-    'Fire Incident': {
-        'Fire Cause': [
-            'Electrical ignition caused by loose connection', 'Electrical ignition caused by overloading', 'Electrical ignition due to pinched wire',
-            'Electrical ignition caused by arcing', 'Overheated industrial machinery', 'Sparks from machinery', 'Overheated home appliances', 'Electrical post fire to structural fire',
-            'Transformer pole fire to structural fire', 'Open flame from cooking (LPG / gas stove, firewood)', 'Open flame from unattended lighted candle',
-            'Open flame from kerosene lamp (gasera) / lighting torch (sulo)', 'Open flame from rubbish fire / bonfire to structural fire',
-            'Open flame from farmland / agricultural land clearing operation', 'Open flame from kaingin (slash and burn)',
-            'Ignition caused by firecracker explosion', 'Ignition caused by fireworks / pyrotechnics explosion', 'Ignition caused by bomb explosion',
-            'Spontaneous combustion of chemicals', 'Spontaneous combustion of solid materials',
-            'Intentional fire by use of incendiary device or mechanism', 'Intentional fire by use of flammable liquid',
-            'Intentional fire by use of open flame (matchstick or lighter or light torch)', 'Ignition of material caused by welding slags',
-            'Ignition of materials caused by acetylene / other hot works', 'LPG explosion caused by defective tank',
-            'LPG explosion caused by defective hose line', 'LPG explosion caused by defective regulator',
-            'LPG explosion caused by defective stove', 'LPG explosion caused by static electricity or spark',
-            'Fire caused by lightning', 'Ignition of materials from ember / flying ember or alipato',
-            'Smoking (lighted cigarette, cigar or pipe)', 'Children playing matchstick or lighter',
-            'Battery short circuit or battery explosion', 'Dust explosion', 'Magnified / amplified sun rays',
-            'Overheated engine (motor vehicles)', 'Sky lantern', 'Fire incident under investigation (on process)',
-            'Undetermined fire cause (on pending investigation)'
-        ],
-        'Occupancy Type': [
-            'Assembly', 'Educational', 'Day-Care', 'Health Care',
-            'Detention & Correctional / Institutional', 'Residential',
-            'Mercantile', 'Business', 'Industrial', 'Storage',
-            'Mixed Occupancies', 'Miscellaneous Occupancies'
-        ],
-        'Class': {
-            'CLASS A': 'Ordinary Combustibles',
-            'CLASS B': 'Flammable Liquids & Gases',
-            'CLASS C': 'Energized Electrical Equipment',
-            'CLASS D': 'Combustible Metals',
-            'CLASS K (or Class F)': 'Cooking Oils & Fats'
+    let menuData = {
+        'Fire Incident': {
+            'Fire Cause': [
+                'Electrical ignition caused by loose connection', 'Electrical ignition caused by overloading', 'Electrical ignition due to pinched wire',
+                'Electrical ignition caused by arcing', 'Overheated industrial machinery', 'Sparks from machinery', 'Overheated home appliances', 'Electrical post fire to structural fire',
+                'Transformer pole fire to structural fire', 'Open flame from cooking (LPG / gas stove, firewood)', 'Open flame from unattended lighted candle',
+                'Open flame from kerosene lamp (gasera) / lighting torch (sulo)', 'Open flame from rubbish fire / bonfire to structural fire',
+                'Open flame from farmland / agricultural land clearing operation', 'Open flame from kaingin (slash and burn)',
+                'Ignition caused by firecracker explosion', 'Ignition caused by fireworks / pyrotechnics explosion', 'Ignition caused by bomb explosion',
+                'Spontaneous combustion of chemicals', 'Spontaneous combustion of solid materials',
+                'Intentional fire by use of incendiary device or mechanism', 'Intentional fire by use of flammable liquid',
+                'Intentional fire by use of open flame (matchstick or lighter or light torch)', 'Ignition of material caused by welding slags',
+                'Ignition of materials caused by acetylene / other hot works', 'LPG explosion caused by defective tank',
+                'LPG explosion caused by defective hose line', 'LPG explosion caused by defective regulator',
+                'LPG explosion caused by defective stove', 'LPG explosion caused by static electricity or spark',
+                'Fire caused by lightning', 'Ignition of materials from ember / flying ember or alipato',
+                'Smoking (lighted cigarette, cigar or pipe)', 'Children playing matchstick or lighter',
+                'Battery short circuit or battery explosion', 'Dust explosion', 'Magnified / amplified sun rays',
+                'Overheated engine (motor vehicles)', 'Sky lantern', 'Fire incident under investigation (on process)',
+                'Undetermined fire cause (on pending investigation)'
+            ],
+            'Occupancy Type': [
+                'Assembly', 'Educational', 'Day-Care', 'Health Care',
+                'Detention & Correctional / Institutional', 'Residential',
+                'Mercantile', 'Business', 'Industrial', 'Storage',
+                'Mixed Occupancies', 'Miscellaneous Occupancies'
+            ],
+            'Class': {
+                'CLASS A': 'Ordinary Combustibles',
+                'CLASS B': 'Flammable Liquids & Gases',
+                'CLASS C': 'Energized Electrical Equipment',
+                'CLASS D': 'Combustible Metals',
+                'CLASS K (or Class F)': 'Cooking Oils & Fats'
+            }
+        }
+    };
+
+    window.activeMarkers = window.activeMarkers || {};
+    
+    let totalIncidents = 0;
+    const liveAlerts = new Map();
+    const recentAlerts = new Map();
+    const alertElements = new Map();
+    const alertTimers = new Map(); // Keep track of timers
+
+    function updateTotalIncidents() {
+        const counterElement = document.getElementById('total-incidents');
+        if (counterElement) {
+            totalIncidents += 1;
+            counterElement.textContent = totalIncidents;
         }
     }
-};
 
-window.activeMarkers = window.activeMarkers || {};
+    // --- OFFICER LOGIC ---
+    function setOfficer() {
+        const position = document.getElementById('officerPosition').value;
+        const name = document.getElementById('officerName').value.trim();
+        if (!position || !name) {
+            alert("Please select a position and enter a name.");
+            return;
+        }
+        document.getElementById('officerModal').style.display = 'none';
 
-// Track alerts
-const liveAlerts = new Map();
-const recentAlerts = new Map();
-const alertElements = new Map();
-const alertTimers = new Map();
+        fetch('/save_officer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ position, name })
+        }).then(() => loadRecentOfficers());
 
-let totalIncidents = 0;
-
-function updateTotalIncidents() {
-    const counterElement = document.getElementById('total-incidents');
-    if (counterElement) {
-        totalIncidents += 1;
-        counterElement.textContent = totalIncidents;
+        const welcomeSpan = document.createElement('div');
+        welcomeSpan.className = 'header-welcome-text';
+        welcomeSpan.innerHTML = `
+            <span class="welcome-word">Welcome</span>
+            <div class="details">
+                <span class="position-text">${position}</span>
+                <span class="name-text">${name}</span>
+            </div>
+        `;
+        const header = document.querySelector('header');
+        if (header) {
+            header.appendChild(welcomeSpan);
+        }
     }
-}
 
-// --- LOAD STORED ALERTS ---
-function loadStoredAlerts() {
-    // 1. Load Live Alerts from bfp_alert table
-    fetch('/load_bfp_alerts')
-        .then(r => r.json())
-        .then(data => {
+    function loadRecentOfficers() {
+        fetch('/get_recent_bfp_officers')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('officerList');
+                list.innerHTML = '';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'officer-item';
+                    div.innerHTML = `
+                        <div class="officer-date">${item.date}</div>
+                        <div class="officer-name">${item.name}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+    }
+
+    window.addEventListener('load', function() {
+        document.getElementById('officerModal').style.display = 'flex';
+        loadRecentOfficers();
+    });
+
+    // --- TAB LOGIC ---
+    document.querySelectorAll('.alert-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab + '-alerts-tab').classList.add('active');
+        });
+    });
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        sidebar.classList.toggle('active');
+        mainContent.classList.toggle('shifted');
+    }
+
+    // --- ALERT LOADING AND PERSISTENCE LOGIC ---
+    function loadStoredAlerts() {
+        document.getElementById('live-alert-container').innerHTML = '';
+        document.getElementById('recent-alert-container').innerHTML = '';
+
+        // Load Live Alerts (Pending)
+        fetch('/load_bfp_alerts').then(r => r.json()).then(data => {
             data.forEach(alertData => {
                 alertData.expired = false;
-                alertData.emergency_type = alertData.type || alertData.emergency_type;
-                alertData.timestamp = alertData.time || alertData.timestamp;
-                updateUIWithAlert(alertData); // NO expiry timer for loaded pending alerts
+                alertData.emergency_type = alertData.type;
+                alertData.timestamp = alertData.time;
+                updateUIWithAlert(alertData);
             });
         });
-    
-    // 2. Load Expired/Recent Alerts from bfp_alert_expire table
-    fetch('/load_bfp_expired')
-        .then(r => r.json())
-        .then(data => {
+
+        // Load Expired Alerts (Recent)
+        fetch('/load_bfp_expired').then(r => r.json()).then(data => {
             const container = document.getElementById('recent-alert-container');
             data.forEach(d => {
-                if (!document.getElementById(`alert-${d.alert_id}`)) {
-                    const row = createExpiredRow(d);
-                    container.appendChild(row);
-                }
-            });
-        });
-}
-
-function createExpiredRow(d) {
-    const row = document.createElement('tr');
-    row.className = 'alert-row';
-    row.id = `alert-${d.alert_id}`;
-    
-    let timeStr = new Date().toLocaleTimeString();
-    if(d.time) { try { timeStr = new Date(d.time).toLocaleTimeString(); } catch(e){} }
-    else if(d.timestamp) { try { timeStr = new Date(d.timestamp).toLocaleTimeString(); } catch(e){} }
-    
-    row.innerHTML = `
-        <td class="status-cell">${
-            d.final_status === 'RESPONDED'
-                ? '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>'
-                : '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">LAPSE</span>'
-        }</td>
-        <td class="time-cell">${timeStr}</td>
-        <td class="barangay-cell">${d.barangay}</td>
-        <td class="type-cell">${d.type || d.emergency_type || 'Fire Incident'}</td>
-        <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px;" onclick="showImage('${d.image}')"/>` : 'No Image'}</td>
-        <td class="actions-cell"></td>
-    `;
-    return row;
-}
-
-function moveToRecent(alertId) {
-    if (!liveAlerts.has(alertId)) return;
-    
-    const { element } = liveAlerts.get(alertId);
-    liveAlerts.delete(alertId);
-    
-    if (alertTimers.has(alertId)) {
-        clearTimeout(alertTimers.get(alertId));
-        alertTimers.delete(alertId);
-    }
-    
-    // Only change status to LAPSE if it wasn't already marked as RESPONDED
-    const statusCell = element.querySelector('.status-cell');
-    if(statusCell && !statusCell.querySelector('.status-responded')) {
-        statusCell.innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">LAPSE</span>';
-    }
-    
-    const recentContainer = document.getElementById('recent-alert-container');
-    recentContainer.insertBefore(element, recentContainer.firstChild);
-    
-    fetch('/expire_bfp_alert', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({alert_id: alertId})
-    });
-}
-
-// --- OFFICER LOGIC ---
-function setOfficer() {
-    const position = document.getElementById('officerPosition').value;
-    const name = document.getElementById('officerName').value.trim();
-    
-    if (!position || !name) {
-        alert("Please select a position and enter a name.");
-        return;
-    }
-    
-    document.getElementById('officerModal').style.display = 'none';
-    
-    fetch('/save_bfp_officer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ position, name })
-    }).then(() => loadRecentOfficers());
-    
-    const welcomeSpan = document.createElement('div');
-    welcomeSpan.className = 'header-welcome-text';
-    welcomeSpan.innerHTML = `
-        <span class="welcome-word">Welcome</span>
-        <div class="details">
-            <span class="position-text">${position}</span>
-            <span class="name-text">${name}</span>
-        </div>
-    `;
-    
-    const header = document.querySelector('header');
-    if (header) {
-        const existingWelcome = header.querySelector('.header-welcome-text');
-        if (existingWelcome) existingWelcome.remove();
-        header.appendChild(welcomeSpan);
-    }
-}
-
-function loadRecentOfficers() {
-    fetch('/get_recent_bfp_officers')
-        .then(r => r.json())
-        .then(data => {
-            const list = document.getElementById('officerList');
-            list.innerHTML = '';
-            data.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'officer-item';
-                div.innerHTML = `
-                    <div class="officer-date">${item.date}</div>
-                    <div class="officer-name">${item.name}</div>
+                const row = document.createElement('tr');
+                row.className = 'alert-row';
+                row.id = `alert-${d.alert_id}`;
+                row.innerHTML = `
+                    <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
+                    <td class="time-cell">${new Date(d.time).toLocaleTimeString()}</td>
+                    <td class="barangay-cell">${d.barangay}</td>
+                    <td class="type-cell">${d.type}</td>
+                    <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px;" onclick="showImage('${d.image}')" />` : 'No Image'}</td>
+                    <td class="actions-cell"></td>
                 `;
-                list.appendChild(div);
+                container.appendChild(row);
             });
         });
-}
-
-window.addEventListener('load', function() {
-    document.getElementById('officerModal').style.display = 'flex';
-    loadRecentOfficers();
-});
-
-// --- TAB LOGIC ---
-document.querySelectorAll('.alert-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab + '-alerts-tab').classList.add('active');
-    });
-});
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    sidebar.classList.toggle('active');
-    mainContent.classList.toggle('shifted');
-}
-
-// --- CHARTS LOGIC ---
-let fireYearlyChart = null;
-let fireMonthlyChart = null;
-let fireJulDecChart = null;
-
-function random(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-function parsePrediction(full, monthly, julDec) {
-    const fullMatch = full.match(/(\d+\.\d+)%/);
-    const monthlyMatch = monthly.match(/(\d+\.\d+)%/);
-    const julDecMatch = julDec.match(/(\d+\.\d+)%/);
-    
-    return {
-        full: fullMatch ? parseFloat(fullMatch[1]) : 50,
-        monthly: monthlyMatch ? parseFloat(monthlyMatch[1]) : 60,
-        julDec: julDecMatch ? parseFloat(julDecMatch[1]) : 70
-    };
-}
-
-function updateFireCharts(data) {
-    const arimaFull = data.arima_full || "Fire 2023 Full Year (ARIMA): 50.0% Risk";
-    const arimaMonthly = data.arima_monthly || "Fire 2023 Monthly (ARIMA): 60.0% Risk";
-    const arimaJulDec = data.arima_jul_dec || "Fire July-Dec 2023 (ARIMA): 70.0% Risk";
-    
-    const arimaxFull = data.arimax_full || "Fire 2023 Full Year (ARIMAX): 50.0% Risk";
-    const arimaxMonthly = data.arimax_monthly || "Fire 2023 Monthly (ARIMAX): 60.0% Risk";
-    const arimaxJulDec = data.arimax_jul_dec || "Fire July-Dec 2023 (ARIMAX): 70.0% Risk";
-    
-    const sarimaFull = data.sarima_full || "Fire 2023 Full Year (SARIMA): 50.0% Risk";
-    const sarimaMonthly = data.sarima_monthly || "Fire 2023 Monthly (SARIMA): 60.0% Risk";
-    const sarimaJulDec = data.sarima_jul_dec || "Fire July-Dec 2023 (SARIMA): 70.0% Risk";
-    
-    const sarimaxFull = data.sarimax_full || "Fire 2023 Full Year (SARIMAX): 50.0% Risk";
-    const sarimaxMonthly = data.sarimax_monthly || "Fire 2023 Monthly (SARIMAX): 60.0% Risk";
-    const sarimaxJulDec = data.sarimax_jul_dec || "Fire July-Dec 2023 (SARIMAX): 70.0% Risk";
-    
-    const arima = parsePrediction(arimaFull, arimaMonthly, arimaJulDec);
-    const arimax = parsePrediction(arimaxFull, arimaxMonthly, arimaxJulDec);
-    const sarima = parsePrediction(sarimaFull, sarimaMonthly, sarimaJulDec);
-    const sarimax = parsePrediction(sarimaxFull, sarimaxMonthly, sarimaxJulDec);
-    
-    const arimaFullRand = Math.round(random(-15, 18));
-    const arimaxFullRand = Math.round(random(-15, 18));
-    const sarimaFullRand = Math.round(random(-15, 18));
-    const sarimaxFullRand = Math.round(random(-15, 18));
-    
-    const arimaMonthRand = Math.round(random(-18, 22));
-    const arimaxMonthRand = Math.round(random(-18, 22));
-    const sarimaMonthRand = Math.round(random(-18, 22));
-    const sarimaxMonthRand = Math.round(random(-18, 22));
-    
-    const arimaJulRand = Math.round(random(-20, 25));
-    const arimaxJulRand = Math.round(random(-20, 25));
-    const sarimaJulRand = Math.round(random(-20, 25));
-    const sarimaxJulRand = Math.round(random(-20, 25));
-    
-    const arimaFullCount = Math.round((arima.full / 100) * 150) + arimaFullRand;
-    const arimaxFullCount = Math.round((arimax.full / 100) * 150) + arimaxFullRand;
-    const sarimaFullCount = Math.round((sarima.full / 100) * 150) + sarimaFullRand;
-    const sarimaxFullCount = Math.round((sarimax.full / 100) * 150) + sarimaxFullRand;
-    
-    const arimaMonthlyCount = Math.round((arima.monthly / 100) * 150) + arimaMonthRand;
-    const arimaxMonthlyCount = Math.round((arimax.monthly / 100) * 150) + arimaxMonthRand;
-    const sarimaMonthlyCount = Math.round((sarima.monthly / 100) * 150) + sarimaMonthRand;
-    const sarimaxMonthlyCount = Math.round((sarimax.monthly / 100) * 150) + sarimaxMonthRand;
-    
-    const arimaJulDecCount = Math.round((arima.julDec / 100) * 90) + arimaJulRand;
-    const arimaxJulDecCount = Math.round((arimax.julDec / 100) * 90) + arimaxJulRand;
-    const sarimaJulDecCount = Math.round((sarima.julDec / 100) * 90) + sarimaJulRand;
-    const sarimaxJulDecCount = Math.round((sarimax.julDec / 100) * 90) + sarimaxJulRand;
-    
-    const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-    
-    if (fireYearlyChart) {
-        fireYearlyChart.data.datasets[0].data[3] = 48;
-        fireYearlyChart.data.datasets[1].data[3] = clamp(arimaFullCount, 60, 190);
-        fireYearlyChart.data.datasets[2].data[3] = clamp(arimaxFullCount, 60, 190);
-        fireYearlyChart.data.datasets[3].data[3] = clamp(sarimaFullCount, 60, 190);
-        fireYearlyChart.data.datasets[4].data[3] = clamp(sarimaxFullCount, 60, 190);
-        fireYearlyChart.options.plugins.title.text = 
-            `Fire Yearly - ARIMA: ${arima.full.toFixed(1)}% | ARIMAX: ${arimax.full.toFixed(1)}% | SARIMA: ${sarima.full.toFixed(1)}% | SARIMAX: ${sarimax.full.toFixed(1)}%`;
-        fireYearlyChart.update('active');
     }
-    
-    if (fireMonthlyChart) {
-        const base2022Fire = [15,18,22,16,25,20,28,30,26,22,19,17];
-        
-        const arimaMonthly2023 = base2022Fire.map(v => {
-            const ratio = arimaMonthlyCount / 92;
-            const variation = random(-18, 22);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const arimaxMonthly2023 = base2022Fire.map(v => {
-            const ratio = arimaxMonthlyCount / 92;
-            const variation = random(-18, 22);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const sarimaMonthly2023 = base2022Fire.map(v => {
-            const ratio = sarimaMonthlyCount / 92;
-            const variation = random(-18, 22);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const sarimaxMonthly2023 = base2022Fire.map(v => {
-            const ratio = sarimaxMonthlyCount / 92;
-            const variation = random(-18, 22);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        fireMonthlyChart.data.datasets[0].data = base2022Fire;
-        fireMonthlyChart.data.datasets[1].data = arimaMonthly2023;
-        fireMonthlyChart.data.datasets[2].data = arimaxMonthly2023;
-        fireMonthlyChart.data.datasets[3].data = sarimaMonthly2023;
-        fireMonthlyChart.data.datasets[4].data = sarimaxMonthly2023;
-        fireMonthlyChart.options.plugins.title.text = 
-            `Fire Monthly - ARIMA: ${arima.monthly.toFixed(1)}% | ARIMAX: ${arimax.monthly.toFixed(1)}% | SARIMA: ${sarima.monthly.toFixed(1)}% | SARIMAX: ${sarimax.monthly.toFixed(1)}%`;
-        fireMonthlyChart.update('active');
-    }
-    
-    if (fireJulDecChart) {
-        const baseJulDecFire = [28,30,26,22,19,17];
-        
-        const arimaJulDec2023 = baseJulDecFire.map(v => {
-            const ratio = arimaJulDecCount / 75;
-            const variation = random(-20, 25);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const arimaxJulDec2023 = baseJulDecFire.map(v => {
-            const ratio = arimaxJulDecCount / 75;
-            const variation = random(-20, 25);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const sarimaJulDec2023 = baseJulDecFire.map(v => {
-            const ratio = sarimaJulDecCount / 75;
-            const variation = random(-20, 25);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        const sarimaxJulDec2023 = baseJulDecFire.map(v => {
-            const ratio = sarimaxJulDecCount / 75;
-            const variation = random(-20, 25);
-            return clamp(Math.round(v * ratio + variation), 0, 100);
-        });
-        
-        fireJulDecChart.data.datasets[0].data = [null,null,null,null,null,null,...baseJulDecFire];
-        fireJulDecChart.data.datasets[1].data = [null,null,null,null,null,null,...arimaJulDec2023];
-        fireJulDecChart.data.datasets[2].data = [null,null,null,null,null,null,...arimaxJulDec2023];
-        fireJulDecChart.data.datasets[3].data = [null,null,null,null,null,null,...sarimaJulDec2023];
-        fireJulDecChart.data.datasets[4].data = [null,null,null,null,null,null,...sarimaxJulDec2023];
-        fireJulDecChart.options.plugins.title.text = 
-            `Fire Jul-Dec - ARIMA: ${arima.julDec.toFixed(1)}% | ARIMAX: ${arimax.julDec.toFixed(1)}% | SARIMA: ${sarima.julDec.toFixed(1)}% | SARIMAX: ${sarimax.julDec.toFixed(1)}%`;
-        fireJulDecChart.update('active');
-    }
-    
-    document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
-}
 
-function initializeCharts() {
-    fireYearlyChart = new Chart('fireYearlyChart', {
-        type: 'line',
-        data: {
-            labels: ['2020','2021','2022','2023 (Predicted)'],
-            datasets: [
-                {
-                    label: '2022 Actual',
-                    data: [20,35,48,48],
-                    borderColor: '#3498db',
-                    fill: false,
-                    borderWidth: 4,
-                    tension: 0.4
-                },
-                {
-                    label: 'ARIMA 2023 Forecast',
-                    data: [20,35,48,48],
-                    borderColor: '#1abc9c',
-                    backgroundColor: 'rgba(26,188,156,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'ARIMAX 2023 Forecast',
-                    data: [20,35,48,48],
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230,126,34,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMA 2023 Forecast',
-                    data: [20,35,48,48],
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39,174,96,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMAX 2023 Forecast',
-                    data: [20,35,48,48],
-                    borderColor: '#9b59b6',
-                    backgroundColor: 'rgba(155,89,182,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 1800 },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Fire - 2023 Full Year Risk: Loading...',
-                    font: { size: 26, weight: 'bold' },
-                    color: '#2c3e50'
-                },
-                legend: {
-                    position: 'top',
-                    labels: { font: { size: 14 } }
-                }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
+    function moveToRecent(alertId) {
+        if (!liveAlerts.has(alertId)) return;
+        const { element } = liveAlerts.get(alertId);
+        
+        // Remove from Live UI maps
+        liveAlerts.delete(alertId);
+        if (alertTimers.has(alertId)) {
+            clearTimeout(alertTimers.get(alertId));
+            alertTimers.delete(alertId);
         }
-    });
-    
-    fireMonthlyChart = new Chart('fireMonthlyChart', {
-        type: 'line',
-        data: {
-            labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-            datasets: [
-                {
-                    label: '2022 Actual',
-                    data: [15,18,22,16,25,20,28,30,26,22,19,17],
-                    borderColor: '#3498db',
-                    fill: false,
-                    borderWidth: 4,
-                    tension: 0.4
-                },
-                {
-                    label: 'ARIMA 2023 Forecast',
-                    data: [16,19,23,17,26,21,29,31,27,23,20,18],
-                    borderColor: '#1abc9c',
-                    backgroundColor: 'rgba(26,188,156,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'ARIMAX 2023 Forecast',
-                    data: [16,19,23,17,26,21,29,31,27,23,20,18],
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230,126,34,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMA 2023 Forecast',
-                    data: [16,19,23,17,26,21,29,31,27,23,20,18],
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39,174,96,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMAX 2023 Forecast',
-                    data: [16,19,23,17,26,21,29,31,27,23,20,18],
-                    borderColor: '#9b59b6',
-                    backgroundColor: 'rgba(155,89,182,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 1800 },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Fire - 2023 Monthly Risk: Loading...',
-                    font: { size: 26, weight: 'bold' },
-                    color: '#2c3e50'
-                },
-                legend: {
-                    position: 'top',
-                    labels: { font: { size: 14 } }
-                }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-    
-    fireJulDecChart = new Chart('fireJulDecChart', {
-        type: 'line',
-        data: {
-            labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-            datasets: [
-                {
-                    label: '2022 Jul–Dec Actual',
-                    data: [null,null,null,null,null,null,28,30,26,22,19,17],
-                    borderColor: '#3498db',
-                    fill: false,
-                    borderWidth: 4,
-                    tension: 0.4
-                },
-                {
-                    label: 'ARIMA Jul–Dec 2023',
-                    data: [null,null,null,null,null,null,29,32,28,24,21,19],
-                    borderColor: '#1abc9c',
-                    backgroundColor: 'rgba(26,188,156,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'ARIMAX Jul–Dec 2023',
-                    data: [null,null,null,null,null,null,29,32,28,24,21,19],
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230,126,34,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMA Jul–Dec 2023',
-                    data: [null,null,null,null,null,null,29,32,28,24,21,19],
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39,174,96,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'SARIMAX Jul–Dec 2023',
-                    data: [null,null,null,null,null,null,29,32,28,24,21,19],
-                    borderColor: '#9b59b6',
-                    backgroundColor: 'rgba(155,89,182,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 1800 },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Fire - July–Dec 2023 Risk: Loading...',
-                    font: { size: 26, weight: 'bold' },
-                    color: '#2c3e50'
-                },
-                legend: {
-                    position: 'top',
-                    labels: { font: { size: 14 } }
-                }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-    
-    fetch('/get_latest_fire_prediction')
-        .then(r => r.json())
-        .then(d => {
-            let pred = d.prediction || "Fire 2023 Full Year: 50.0% Risk | Fire 2023 Monthly: 60.0% Risk | Fire July-Dec 2023: 70.0% Risk";
-            
-            if (pred.startsWith('{')) {
-                try {
-                    const jsonPred = JSON.parse(pred);
-                    const full = jsonPred.sarima?.full_year || jsonPred.arima?.full_year || "Fire 2023 Full Year: 50.0% Risk";
-                    const monthly = jsonPred.sarima?.monthly || jsonPred.arima?.monthly || "Fire 2023 Monthly: 60.0% Risk";
-                    const julDec = jsonPred.sarima?.jul_dec || jsonPred.arima?.jul_dec || "Fire July-Dec 2023: 70.0% Risk";
-                    
-                    updateFireCharts({
-                        fire_full: full,
-                        fire_monthly: monthly,
-                        fire_jul_dec: julDec,
-                        arima_full: jsonPred.arima?.full_year,
-                        arimax_full: jsonPred.arimax?.full_year,
-                        sarima_full: jsonPred.sarima?.full_year,
-                        sarimax_full: jsonPred.sarimax?.full_year,
-                    });
-                    return;
-                } catch (e) {
-                    console.warn("Failed to parse JSON prediction, falling back to string split", e);
-                }
-            }
-            
-            const [full, monthly, julDec] = pred.split('|').map(s => s.trim());
-            updateFireCharts({
-                fire_full: full,
-                fire_monthly: monthly,
-                fire_jul_dec: julDec
-            });
-        })
-        .catch(err => {
-            console.error("Failed to fetch latest fire prediction:", err);
-            updateFireCharts({
-                fire_full: "Fire 2023 Full Year: 50.0% Risk",
-                fire_monthly: "Fire 2023 Monthly: 60.0% Risk",
-                fire_jul_dec: "Fire July-Dec 2023: 70.0% Risk"
-            });
-        });
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadStoredAlerts(); // Load alerts from DB immediately
-    initializeCharts();
-    
-    const lat = {{ lat_coord|default(14.0549) }};
-    const lon = {{ lon_coord|default(121.3013) }};
-    const mapboxToken = 'pk.eyJ1Ijoia3VtaXRva2lydSIsImEiOiJjbWNvZXpkdDQwNmdvMnNyMnNtNGw5NGI1In0.3Y9z5y4saOL76Eb5c-o0UQ';
-    const tileLayerUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
-    
-    const bfpMap = L.map('map').setView([lat, lon], 16);
-    
-    var satellite = L.tileLayer(tileLayerUrl, {
-        attribution: 'Map data © OpenStreetMap contributors, Imagery © Mapbox',
-        maxZoom: 18, tileSize: 512, zoomOffset: -1
-    });
-    
-    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    });
-    
-    satellite.addTo(bfpMap);
-    L.control.layers({ "Satellite": satellite, "OSM": osm }).addTo(bfpMap);
-    
-    const socket = io('https://now-alert-o6l9.onrender.com', { transports: ['websocket'] });
-    
-    // Alerts per Month Chart (BFP Specific)
-    const ctx = document.getElementById('alertsPerMonthChart').getContext('2d');
-    let alertsPerMonthChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            datasets: [{
-                data: [
-                    {{ alerts_per_month['January']|default(0) }}, {{ alerts_per_month['February']|default(0) }},
-                    {{ alerts_per_month['March']|default(0) }}, {{ alerts_per_month['April']|default(0) }},
-                    {{ alerts_per_month['May']|default(0) }}, {{ alerts_per_month['June']|default(0) }},
-                    {{ alerts_per_month['July']|default(0) }}, {{ alerts_per_month['August']|default(0) }},
-                    {{ alerts_per_month['September']|default(0) }}, {{ alerts_per_month['October']|default(0) }},
-                    {{ alerts_per_month['November']|default(0) }}, {{ alerts_per_month['December']|default(0) }}
-                ],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6F61', '#6B7280', '#F4A261', '#2A9D8F', '#E76F51', '#D00000'],
-                borderColor: '#000000', borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, aspectRatio: 1.5,
-            plugins: { legend: { display: false } }
+        // Add to Recent maps and update UI status
+        recentAlerts.set(alertId, { element, timestamp: Date.now() });
+        element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+        
+        // Move element to the Recent container visually
+        const recentContainer = document.getElementById('recent-alert-container');
+        recentContainer.insertBefore(element, recentContainer.firstChild);
+
+        // Tell Backend to move DB record from live to expired
+        fetch('/expire_bfp_alert', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({alert_id: alertId})
+        });
+    }
+
+    // --- CHARTS LOGIC ---
+    let fireYearlyChart = null;
+    let fireMonthlyChart = null;
+    let fireJulDecChart = null;
+
+    function random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function parsePrediction(full, monthly, julDec) {
+        const fullMatch = full.match(/(\d+\.\d+)%/);
+        const monthlyMatch = monthly.match(/(\d+\.\d+)%/);
+        const julDecMatch = julDec.match(/(\d+\.\d+)%/);
+        return {
+            full: fullMatch ? parseFloat(fullMatch[1]) : 50,
+            monthly: monthlyMatch ? parseFloat(monthlyMatch[1]) : 60,
+            julDec: julDecMatch ? parseFloat(julDecMatch[1]) : 70
+        };
+    }
+
+    function updateFireCharts(data) {
+        // [Maintain existing updateFireCharts logic as provided in 5.docx]
+        const arimaFull    = data.arima_full    || "Fire 2023 Full Year (ARIMA): 50.0% Risk";
+        const arimaMonthly = data.arima_monthly || "Fire 2023 Monthly (ARIMA): 60.0% Risk";
+        const arimaJulDec  = data.arima_jul_dec || "Fire July-Dec 2023 (ARIMA): 70.0% Risk";
+        const arimaxFull    = data.arimax_full    || "Fire 2023 Full Year (ARIMAX): 50.0% Risk";
+        const arimaxMonthly = data.arimax_monthly || "Fire 2023 Monthly (ARIMAX): 60.0% Risk";
+        const arimaxJulDec  = data.arimax_jul_dec || "Fire July-Dec 2023 (ARIMAX): 70.0% Risk";
+        const sarimaFull    = data.sarima_full    || "Fire 2023 Full Year (SARIMA): 50.0% Risk";
+        const sarimaMonthly = data.sarima_monthly || "Fire 2023 Monthly (SARIMA): 60.0% Risk";
+        const sarimaJulDec  = data.sarima_jul_dec || "Fire July-Dec 2023 (SARIMA): 70.0% Risk";
+        const sarimaxFull    = data.sarimax_full    || "Fire 2023 Full Year (SARIMAX): 50.0% Risk";
+        const sarimaxMonthly = data.sarimax_monthly || "Fire 2023 Monthly (SARIMAX): 60.0% Risk";
+        const sarimaxJulDec  = data.sarimax_jul_dec || "Fire July-Dec 2023 (SARIMAX): 70.0% Risk";
+        
+        const arima   = parsePrediction(arimaFull,    arimaMonthly,   arimaJulDec);
+        const arimax  = parsePrediction(arimaxFull,   arimaxMonthly,  arimaxJulDec);
+        const sarima  = parsePrediction(sarimaFull,   sarimaMonthly,  sarimaJulDec);
+        const sarimax = parsePrediction(sarimaxFull,  sarimaxMonthly, sarimaxJulDec);
+        
+        const arimaFullRand    = Math.round(random(-15, 18));
+        const arimaxFullRand   = Math.round(random(-15, 18));
+        const sarimaFullRand   = Math.round(random(-15, 18));
+        const sarimaxFullRand  = Math.round(random(-15, 18));
+        const arimaMonthRand   = Math.round(random(-18, 22));
+        const arimaxMonthRand  = Math.round(random(-18, 22));
+        const sarimaMonthRand  = Math.round(random(-18, 22));
+        const sarimaxMonthRand = Math.round(random(-18, 22));
+        const arimaJulRand     = Math.round(random(-20, 25));
+        const arimaxJulRand    = Math.round(random(-20, 25));
+        const sarimaJulRand    = Math.round(random(-20, 25));
+        const sarimaxJulRand   = Math.round(random(-20, 25));
+        
+        const arimaFullCount    = Math.round((arima.full    / 100) * 150) + arimaFullRand;
+        const arimaxFullCount   = Math.round((arimax.full   / 100) * 150) + arimaxFullRand;
+        const sarimaFullCount   = Math.round((sarima.full   / 100) * 150) + sarimaFullRand;
+        const sarimaxFullCount  = Math.round((sarimax.full  / 100) * 150) + sarimaxFullRand;
+        const arimaMonthlyCount  = Math.round((arima.monthly  / 100) * 150) + arimaMonthRand;
+        const arimaxMonthlyCount = Math.round((arimax.monthly / 100) * 150) + arimaxMonthRand;
+        const sarimaMonthlyCount = Math.round((sarima.monthly / 100) * 150) + sarimaMonthRand;
+        const sarimaxMonthlyCount = Math.round((sarimax.monthly/ 100) * 150) + sarimaxMonthRand;
+        const arimaJulDecCount   = Math.round((arima.julDec   / 100) * 90) + arimaJulRand;
+        const arimaxJulDecCount  = Math.round((arimax.julDec  / 100) * 90) + arimaxJulRand;
+        const sarimaJulDecCount  = Math.round((sarima.julDec  / 100) * 90) + sarimaJulRand;
+        const sarimaxJulDecCount = Math.round((sarimax.julDec / 100) * 90) + sarimaxJulRand;
+        
+        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+        if (fireYearlyChart) {
+            fireYearlyChart.data.datasets[0].data[3] = 48;
+            fireYearlyChart.data.datasets[1].data[3] = clamp(arimaFullCount,   60, 190);
+            fireYearlyChart.data.datasets[2].data[3] = clamp(arimaxFullCount,  60, 190);
+            fireYearlyChart.data.datasets[3].data[3] = clamp(sarimaFullCount,  60, 190);
+            fireYearlyChart.data.datasets[4].data[3] = clamp(sarimaxFullCount, 60, 190);
+            fireYearlyChart.options.plugins.title.text = `Fire Yearly - ARIMA: ${arima.full.toFixed(1)}% | ARIMAX: ${arimax.full.toFixed(1)}% | SARIMA: ${sarima.full.toFixed(1)}% | SARIMAX: ${sarimax.full.toFixed(1)}%`;
+            fireYearlyChart.update('active');
         }
-    });
-    
-    socket.on('update_alerts_per_month', (data) => {
-        alertsPerMonthChart.data.datasets[0].data = Object.values(data);
-        alertsPerMonthChart.update();
-    });
-    
-    socket.on('connect', () => {
-        console.log('Connected to server');
-        socket.emit('register_role', { role: 'bfp', municipality: '{{ municipality }}'.toLowerCase() });
-    });
-    
-    socket.on('redirected_alert', (data) => {
-        if (data.target_role === 'bfp' || data.emergency_type === 'Fire Incident') {
-            updateUIWithAlert(data);
-            notifyAlert(data);
-            
+        
+        if (fireMonthlyChart) {
+            const base2022Fire = [15,18,22,16,25,20,28,30,26,22,19,17];
+            const arimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const arimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            fireMonthlyChart.data.datasets[0].data = base2022Fire;
+            fireMonthlyChart.data.datasets[1].data = arimaMonthly2023;
+            fireMonthlyChart.data.datasets[2].data = arimaxMonthly2023;
+            fireMonthlyChart.data.datasets[3].data = sarimaMonthly2023;
+            fireMonthlyChart.data.datasets[4].data = sarimaxMonthly2023;
+            fireMonthlyChart.options.plugins.title.text = `Fire Monthly - ARIMA: ${arima.monthly.toFixed(1)}% | ARIMAX: ${arimax.monthly.toFixed(1)}% | SARIMA: ${sarima.monthly.toFixed(1)}% | SARIMAX: ${sarimax.monthly.toFixed(1)}%`;
+            fireMonthlyChart.update('active');
+        }
+        
+        if (fireJulDecChart) {
+            const baseJulDecFire = [28,30,26,22,19,17];
+            const arimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const arimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+            fireJulDecChart.data.datasets[0].data = [null,null,null,null,null,null,...baseJulDecFire];
+            fireJulDecChart.data.datasets[1].data = [null,null,null,null,null,null,...arimaJulDec2023];
+            fireJulDecChart.data.datasets[2].data = [null,null,null,null,null,null,...arimaxJulDec2023];
+            fireJulDecChart.data.datasets[3].data = [null,null,null,null,null,null,...sarimaJulDec2023];
+            fireJulDecChart.data.datasets[4].data = [null,null,null,null,null,null,...sarimaxJulDec2023];
+            fireJulDecChart.options.plugins.title.text = `Fire Jul-Dec - ARIMA: ${arima.julDec.toFixed(1)}% | ARIMAX: ${arimax.julDec.toFixed(1)}% | SARIMA: ${sarima.julDec.toFixed(1)}% | SARIMAX: ${sarimax.julDec.toFixed(1)}%`;
+            fireJulDecChart.update('active');
+        }
+        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function initializeCharts() {
+        // [Maintain existing Chart Initialization as provided]
+        fireYearlyChart = new Chart('fireYearlyChart', {
+            type: 'line',
+            data: {
+                labels: ['2020','2021','2022','2023 (Predicted)'],
+                datasets: [
+                    { label: '2022 Actual', data: [20,35,48,48], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - 2023 Full Year Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+        fireMonthlyChart = new Chart('fireMonthlyChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Actual', data: [15,18,22,16,25,20,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - 2023 Monthly Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+        fireJulDecChart = new Chart('fireJulDecChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Jul–Dec Actual', data: [null,null,null,null,null,null,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - July–Dec 2023 Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadStoredAlerts();
+        initializeCharts();
+
+        const lat = {{ lat_coord|default(14.0549) }};
+        const lon = {{ lon_coord|default(121.3013) }};
+        const mapboxToken = 'pk.eyJ1Ijoia3VtaXRva2lydSIsImEiOiJjbWNvZXpkdDQwNmdvMnNyMnNtNGw5NGI1In0.3Y9z5y4saOL76Eb5c-o0UQ';
+        const tileLayerUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+        const bfpMap = L.map('map').setView([lat, lon], 16);
+        var satellite = L.tileLayer(tileLayerUrl, { attribution: 'Map data © OpenStreetMap contributors, Imagery © Mapbox', maxZoom: 18, tileSize: 512, zoomOffset: -1 });
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
+        satellite.addTo(bfpMap);
+        L.control.layers({ "Satellite": satellite, "OSM": osm }).addTo(bfpMap);
+        
+        const socket = io('https://now-alert-o6l9.onrender.com', { transports: ['websocket'] });
+        
+        // Alerts per Month Chart
+        const ctx = document.getElementById('alertsPerMonthChart').getContext('2d');
+        let alertsPerMonthChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                datasets: [{
+                    data: [
+                        {{ alerts_per_month['January']|default(0) }}, {{ alerts_per_month['February']|default(0) }},
+                        {{ alerts_per_month['March']|default(0) }}, {{ alerts_per_month['April']|default(0) }},
+                        {{ alerts_per_month['May']|default(0) }}, {{ alerts_per_month['June']|default(0) }},
+                        {{ alerts_per_month['July']|default(0) }}, {{ alerts_per_month['August']|default(0) }},
+                        {{ alerts_per_month['September']|default(0) }}, {{ alerts_per_month['October']|default(0) }},
+                        {{ alerts_per_month['November']|default(0) }}, {{ alerts_per_month['December']|default(0) }}
+                    ],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6F61', '#6B7280', '#F4A261', '#2A9D8F', '#E76F51', '#D00000'],
+                    borderColor: '#000000', borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, aspectRatio: 1.5, plugins: { legend: { display: false } } }
+        });
+
+        socket.on('update_alerts_per_month', (data) => {
+            alertsPerMonthChart.data.datasets[0].data = Object.values(data);
+            alertsPerMonthChart.update();
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('register_role', { role: 'bfp', municipality: '{{ municipality }}'.toLowerCase() });
+        });
+
+        socket.on('redirected_alert', (data) => {
+            if (data.target_role === 'bfp' || data.emergency_type === 'Fire Incident') {
+                updateUIWithAlert(data);
+                notifyAlert(data);
+                const lat = data.lat || {{ lat_coord|default(14.0549) }};
+                const lon = data.lon || {{ lon_coord|default(121.3013) }};
+                if (window.activeMarkers[data.alert_id]) {
+                    bfpMap.removeLayer(window.activeMarkers[data.alert_id]);
+                }
+                const marker = L.marker([lat, lon]).addTo(bfpMap).bindPopup(`Fire Incident at ${data.barangay}`).openPopup();
+                window.activeMarkers[data.alert_id] = marker;
+                bfpMap.setView([lat, lon], 15);
+                document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
+            }
+        });
+
+        socket.on('update_map', (data) => {
             const lat = data.lat || {{ lat_coord|default(14.0549) }};
             const lon = data.lon || {{ lon_coord|default(121.3013) }};
-            
-            if (window.activeMarkers[data.alert_id]) {
-                bfpMap.removeLayer(window.activeMarkers[data.alert_id]);
-            }
-            
-            const marker = L.marker([lat, lon]).addTo(bfpMap).bindPopup(`Fire Incident at ${data.barangay}`).openPopup();
-            window.activeMarkers[data.alert_id] = marker;
-            bfpMap.setView([lat, lon], 15);
+            bfpMap.setView([lat, lon], 16);
+            L.marker([lat, lon]).addTo(bfpMap).bindPopup(`Fire Incident at ${data.barangay}`).openPopup();
             document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
-        }
-    });
-    
-    socket.on('update_map', (data) => {
-        const lat = data.lat || {{ lat_coord|default(14.0549) }};
-        const lon = data.lon || {{ lon_coord|default(121.3013) }};
-        bfpMap.setView([lat, lon], 16);
-        L.marker([lat, lon]).addTo(bfpMap).bindPopup(`Fire Incident at ${data.barangay}`).openPopup();
-        document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
-    });
-    
-    // --- TABLE ROW CREATION LOGIC (UPDATED for BFP) ---
-    function updateUIWithAlert(data) {
-        const isLive = data.expired !== true;
-        const container = isLive
-            ? document.getElementById('live-alert-container')
-            : document.getElementById('recent-alert-container');
-        
-        if(alertElements.has(data.alert_id)) return; // Prevent duplicates
-        
-        const alertItem = document.createElement('tr');
-        alertItem.className = 'alert-row';
-        alertItem.id = `alert-${data.alert_id}`;
-        alertItem.innerHTML = `
-            <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-            <td class="time-cell">${new Date(data.timestamp || data.time || Date.now()).toLocaleTimeString()}</td>
-            <td class="barangay-cell">${data.barangay}</td>
-            <td class="type-cell">${data.emergency_type || 'Fire Incident'}</td>
-            <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
-            <td class="actions-cell"></td>
-        `;
-        
-        const actionsCell = alertItem.querySelector('.actions-cell');
-        
-        // SHOW RESPONSE FORM DIRECTLY
-        if (isLive) {
-            showResponseForm(actionsCell, data, alertItem);
-        }
-        
-        alertElements.set(data.alert_id, alertItem);
-        
-        if (isLive) {
-            container.insertBefore(alertItem, container.firstChild);
-            liveAlerts.set(data.alert_id, { element: alertItem });
-        } else {
-            container.appendChild(alertItem);
-        }
-        
-        alertItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        updateTotalIncidents();
-    }
-    
-    function showResponseForm(container, data, alertItem) {
-        container.innerHTML = '';
-        const form = document.createElement('div');
-        form.className = 'response-form-inline';
-        form.style.display = 'flex';
-        form.style.flexWrap = 'wrap';
-        form.style.gap = '5px';
-        
-        // Fire Cause Dropdown
-        const fireCauseSelect = document.createElement('select');
-        fireCauseSelect.className = 'dropdown-emergency';
-        fireCauseSelect.name = 'fire_cause';
-        const fcPlaceholder = document.createElement('option');
-        fcPlaceholder.text = 'Select Fire Cause';
-        fcPlaceholder.disabled = true;
-        fcPlaceholder.selected = true;
-        fireCauseSelect.appendChild(fcPlaceholder);
-        menuData['Fire Incident']['Fire Cause'].forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.text = opt;
-            fireCauseSelect.appendChild(option);
         });
-        form.appendChild(fireCauseSelect);
-        
-        // Occupancy Type Dropdown
-        const occupancySelect = document.createElement('select');
-        occupancySelect.className = 'dropdown-emergency';
-        occupancySelect.name = 'occupancy_type';
-        const occPlaceholder = document.createElement('option');
-        occPlaceholder.text = 'Select Occupancy Type';
-        occPlaceholder.disabled = true;
-        occPlaceholder.selected = true;
-        occupancySelect.appendChild(occPlaceholder);
-        menuData['Fire Incident']['Occupancy Type'].forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.text = opt;
-            occupancySelect.appendChild(option);
-        });
-        form.appendChild(occupancySelect);
-        
-        // Fire Class Dropdown
-        const classSelect = document.createElement('select');
-        classSelect.className = 'dropdown-emergency';
-        classSelect.name = 'fire_class';
-        const classPlaceholder = document.createElement('option');
-        classPlaceholder.text = 'Select Fire Class';
-        classPlaceholder.disabled = true;
-        classPlaceholder.selected = true;
-        classSelect.appendChild(classPlaceholder);
-        Object.keys(menuData['Fire Incident']['Class']).forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.text = opt;
-            classSelect.appendChild(option);
-        });
-        form.appendChild(classSelect);
-        
-        const submitBtn = document.createElement('button');
-        submitBtn.textContent = 'Submit';
-        submitBtn.className = 'alert-button alert-button-submit';
-        
-        submitBtn.onclick = () => {
-            const formData = {
-                alert_id: data.alert_id,
-                role: 'bfp',
-                lat: data.lat,
-                lon: data.lon,
-                barangay: data.barangay,
-                emergency_type: 'Fire Incident',
-                municipality: '{{ municipality }}'.toLowerCase()
-            };
-            
-            form.querySelectorAll('select').forEach(s => {
-                formData[s.name] = s.value;
-            });
-            
-            socket.emit('fire_response_submitted', formData);
-            
-            container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
-            const row = container.closest('tr');
-            if(row) {
-                row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-                
-                const predictionSpan = document.createElement('div');
-                predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
-                predictionSpan.className = 'prediction-text';
-                predictionSpan.style.fontSize = '12px';
-                predictionSpan.style.color = 'black';
-                container.appendChild(predictionSpan);
+
+        function updateUIWithAlert(data) {
+            const isLive = data.expired !== true;
+            const container = isLive
+                ? document.getElementById('live-alert-container')
+                : document.getElementById('recent-alert-container');
+
+            if (alertElements.has(data.alert_id)) return;
+
+            const alertItem = document.createElement('tr');
+            alertItem.className = 'alert-row';
+            alertItem.id = `alert-${data.alert_id}`;
+            alertItem.innerHTML = `
+                <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
+                <td class="time-cell">${new Date(data.timestamp || data.time).toLocaleTimeString()}</td>
+                <td class="barangay-cell">${data.barangay}</td>
+                <td class="type-cell">${data.emergency_type || 'Fire Incident'}</td>
+                <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
+                <td class="actions-cell"></td>
+            `;
+            const actionsCell = alertItem.querySelector('.actions-cell');
+
+            if (isLive) {
+                showResponseForm(actionsCell, data);
             }
+
+            alertElements.set(data.alert_id, alertItem);
             
-            // Delete from live database immediately after submission
-            fetch('/delete_bfp_alert', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({alert_id: data.alert_id})
+            if (isLive) {
+                container.insertBefore(alertItem, container.firstChild);
+                liveAlerts.set(data.alert_id, { element: alertItem });
+                // We DO NOT set the timer here anymore. Timer starts upon SUBMIT.
+            } else {
+                container.appendChild(alertItem);
+            }
+            updateTotalIncidents();
+        }
+
+        function showResponseForm(container, data) {
+            container.innerHTML = '';
+            const form = document.createElement('div');
+            form.className = 'response-form-inline';
+            form.style.display = 'flex';
+            form.style.flexWrap = 'wrap';
+            form.style.gap = '5px';
+
+            const fireCauseSelect = document.createElement('select');
+            fireCauseSelect.className = 'dropdown-emergency';
+            fireCauseSelect.name = 'fire_cause';
+            const fcPlaceholder = document.createElement('option');
+            fcPlaceholder.text = 'Select Fire Cause';
+            fcPlaceholder.disabled = true;
+            fcPlaceholder.selected = true;
+            fireCauseSelect.appendChild(fcPlaceholder);
+            menuData['Fire Incident']['Fire Cause'].forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.text = opt;
+                fireCauseSelect.appendChild(option);
             });
-            
-            // Set 30 second timer AFTER submission to move to Recent tab
-            const timer = setTimeout(() => {
-                moveToRecent(data.alert_id);
-            }, 30000);
-            alertTimers.set(data.alert_id, timer);
-        };
-        
-        form.appendChild(submitBtn);
-        container.appendChild(form);
-    }
-    
-    socket.on('fire_response_submitted', () => {
-        fetch('/get_latest_fire_prediction')
-            .then(r => r.json())
-            .then(data => updateFireCharts(data));
-        
-        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+            form.appendChild(fireCauseSelect);
+
+            const occupancySelect = document.createElement('select');
+            occupancySelect.className = 'dropdown-emergency';
+            occupancySelect.name = 'occupancy_type';
+            const occPlaceholder = document.createElement('option');
+            occPlaceholder.text = 'Select Occupancy Type';
+            occPlaceholder.disabled = true;
+            occPlaceholder.selected = true;
+            occupancySelect.appendChild(occPlaceholder);
+            menuData['Fire Incident']['Occupancy Type'].forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.text = opt;
+                occupancySelect.appendChild(option);
+            });
+            form.appendChild(occupancySelect);
+
+            const classSelect = document.createElement('select');
+            classSelect.className = 'dropdown-emergency';
+            classSelect.name = 'fire_class';
+            const classPlaceholder = document.createElement('option');
+            classPlaceholder.text = 'Select Fire Class';
+            classPlaceholder.disabled = true;
+            classPlaceholder.selected = true;
+            classSelect.appendChild(classPlaceholder);
+            Object.keys(menuData['Fire Incident']['Class']).forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.text = opt;
+                classSelect.appendChild(option);
+            });
+            form.appendChild(classSelect);
+
+            const submitBtn = document.createElement('button');
+            submitBtn.textContent = 'Submit';
+            submitBtn.className = 'alert-button alert-button-submit';
+
+            submitBtn.onclick = () => {
+                const formData = {
+                    alert_id: data.alert_id,
+                    role: 'bfp',
+                    lat: data.lat,
+                    lon: data.lon,
+                    barangay: data.barangay,
+                    emergency_type: 'Fire Incident',
+                    municipality: '{{ municipality }}'.toLowerCase()
+                };
+                form.querySelectorAll('select').forEach(s => {
+                    formData[s.name] = s.value;
+                });
+                socket.emit('fire_response_submitted', formData);
+                
+                container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
+                const row = container.closest('tr');
+                if(row) {
+                    row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+                    const predictionSpan = document.createElement('div');
+                    predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
+                    predictionSpan.className = 'prediction-text';
+                    predictionSpan.style.fontSize = '12px';
+                    predictionSpan.style.color = 'black';
+                    container.appendChild(predictionSpan);
+                }
+
+                // START THE 30 SECOND TIMER AFTER SUBMITTING
+                const timerId = setTimeout(() => moveToRecent(data.alert_id), 30000);
+                alertTimers.set(data.alert_id, timerId);
+
+                // Notify backend to remove from live DB table immediately after submission
+                fetch('/remove_bfp_alert', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({alert_id: data.alert_id})
+                });
+            };
+            form.appendChild(submitBtn);
+            container.appendChild(form);
+        }
+
+        socket.on('fire_response_submitted', () => {
+            fetch('/get_latest_fire_prediction')
+                .then(r => r.json())
+                .then(data => updateFireCharts(data)); // Assuming updateFireCharts accepts raw data obj
+            document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        window.showImage = function(base64) {
+            document.getElementById('modal-image').src = `data:image/jpeg;base64,${base64}`;
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+
+        document.querySelector('.close-btn').addEventListener('click', () => {
+            document.getElementById('image-modal').style.display = 'none';
+        });
+
+        function notifyAlert(data) {
+            const n = document.getElementById('notification');
+            n.textContent = `New Fire Alert at ${data.barangay}`;
+            setTimeout(() => n.textContent = '', 6000);
+        }
     });
-    
-    socket.on('update_fire_multi_charts', updateFireCharts);
-    
-    window.showImage = function(base64) {
-        document.getElementById('modal-image').src = `data:image/jpeg;base64,${base64}`;
-        document.getElementById('image-modal').style.display = 'flex';
-    }
-    
-    document.querySelector('.close-btn').addEventListener('click', () => {
-        document.getElementById('image-modal').style.display = 'none';
-    });
-    
-    function notifyAlert(data) {
-        const n = document.getElementById('notification');
-        n.textContent = `New Fire Alert at ${data.barangay}`;
-        setTimeout(() => n.textContent = '', 6000);
-    }
-});
 </script>

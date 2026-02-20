@@ -82,8 +82,8 @@ from BFPDashboard import (
     get_bfp_stats, get_latest_alert, get_the_stat_bfp, get_bfp_alerts_per_month,
     get_bfp_responded_count, emit_bfp_alerts_per_month_update,
     save_bfp_officer, get_recent_bfp_officers,
-    handle_store_bfp_alert, handle_load_bfp_alerts, handle_store_bfp_alert,
-        handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert
+    handle_store_bfp_alert, handle_load_bfp_alerts,
+    handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert
 )
 
 from HealthDashboard import get_health_stats, get_latest_alert
@@ -2392,21 +2392,23 @@ def expire_cdrrmo_alert_route():
 # BFP
 @app.route('/load_bfp_alerts')
 def load_bfp_alerts_route():
-    """Load all pending BFP alerts"""
     return handle_load_bfp_alerts()
 
 @app.route('/load_bfp_expired')
 def load_bfp_expired_route():
-    """Load all expired/submitted BFP alerts"""
     return handle_load_bfp_expired()
 
 @app.route('/expire_bfp_alert', methods=['POST'])
 def expire_bfp_alert_route():
-    """Move BFP alert from live to expired table"""
     data = request.get_json()
-    if not data or 'alert_id' not in data:
-        return jsonify({'error': 'Missing alert_id'}), 400
     return handle_move_bfp_to_recent(data['alert_id'])
+
+@app.route('/remove_bfp_alert', methods=['POST'])
+def remove_bfp_alert_route():
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    success = handle_remove_bfp_alert(alert_id)
+    return jsonify({'success': success})
 
 # PNP
 @app.route('/load_pnp_alerts')
