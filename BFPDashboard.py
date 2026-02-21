@@ -213,3 +213,18 @@ def handle_remove_bfp_alert(alert_id):
         logger.error(f"Error removing bfp alert: {e}")
         return False
     
+def get_bfp_recent_counts():
+    try:
+        conn = get_db_connection()
+        # Loads bfp_alert_expire
+        cursor = conn.execute("SELECT type FROM bfp_alert_expire")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Counts the number of BOTH Road Accident and Fire Incident
+        total = sum(1 for r in rows if r['type'] in ['Road Accident', 'Fire Incident'])
+        
+        return jsonify({'total': total})
+    except Exception as e:
+        logger.error(f"Error getting bfp recent counts: {e}")
+        return jsonify({'total': 0})

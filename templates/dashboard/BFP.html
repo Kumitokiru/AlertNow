@@ -120,6 +120,16 @@
         mainContent.classList.toggle('shifted');
     }
 
+    function loadRecentCounts() {
+        fetch('/api/bfp_recent_counts')
+            .then(r => r.json())
+            .then(data => {
+                const tot = document.getElementById('stat-total-recent');
+                if (tot) tot.textContent = data.total;
+            })
+            .catch(e => console.error("Error loading stats:", e));
+    }
+
     function loadStoredAlerts() {
         document.getElementById('live-alert-container').innerHTML = '';
         document.getElementById('recent-alert-container').innerHTML = '';
@@ -148,6 +158,15 @@
                 row.className = 'alert-row';
                 row.id = `alert-${d.alert_id}`;
 
+                let dateVal = '';
+                let timeStr = new Date().toLocaleString();
+                try {
+                    const dObj = new Date(d.time || d.timestamp);
+                    timeStr = dObj.toLocaleString();
+                    dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
+                } catch(e){}
+                row.setAttribute('data-date', dateVal);
+
                 let statusHtml = '';
                 if (d.status === 'RESPONDED') {
                     statusHtml = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
@@ -165,6 +184,7 @@
                 `;
                 container.appendChild(row);
             });
+            loadRecentCounts();
         });
     }
 
@@ -454,6 +474,15 @@
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
 
+            let dateVal = '';
+            let timeStr = new Date().toLocaleString();
+            try {
+                const dObj = new Date(data.timestamp || data.time || Date.now());
+                timeStr = dObj.toLocaleString();
+                dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
+            } catch(e){}
+            alertItem.setAttribute('data-date', dateVal);
+
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
                 <td class="time-cell">${new Date(data.timestamp || data.time || Date.now()).toLocaleTimeString()}</td>
@@ -612,5 +641,71 @@
             n.textContent = `New Fire Alert at ${data.barangay}`;
             setTimeout(() => n.textContent = '', 6000);
         }
+
+        const selectedDates = new Set();
+
+        document.getElementById('add-date-btn')?.addEventListener('click', () => {
+            const dateVal = document.getElementById('recent-date-input').value;
+            if (dateVal) {
+                selectedDates.add(dateVal);
+                updateDateDisplay();
+                filterRecentTable();
+            }
+        });
+
+        document.getElementById('clear-dates-btn')?.addEventListener('click', () => {
+            selectedDates.clear();
+            document.getElementById('recent-date-input').value = '';
+            updateDateDisplay();
+            filterRecentTable();
+        });
+
+        function updateDateDisplay() {
+            const display = document.getElementById('selected-dates-display');
+            if (selectedDates.size > 0) {
+                display.textContent = "Selected Dates: " + Array.from(selectedDates).join(', ');
+            } else {
+                display.textContent = "";
+            }
+        }
+
+        function filterRecentTable() {
+            document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
+                if (selectedDates.size === 0) {
+                    item.style.display = 'table-row';
+                } else {
+                    const rowDate = item.getAttribute('data-date');
+                    if (selectedDates.has(rowDate)) {
+                        item.style.display = 'table-row';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        document.getElementById('download-csv-btn')?.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Status,Date & Time,Barangay,Type\n";
+
+            document.querySelectorAll('#recent-alert-container .alert-row').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const status = row.querySelector('.status-cell').textContent.trim();
+                    const time = row.querySelector('.time-cell').textContent.trim().replace(/"/g, '""');
+                    const barangay = row.querySelector('.barangay-cell').textContent.trim();
+                    const type = row.querySelector('.type-cell').textContent.trim();
+                    
+                    csvContent += `"${status}","${time}","${barangay}","${type}"\n`;
+                }
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Recent_Alerts_BFP.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
     });
 </script>

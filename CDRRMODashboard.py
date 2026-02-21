@@ -238,3 +238,19 @@ def handle_remove_cdrrmo_alert(alert_id):
     except Exception as e:
         logger.error(f"Error removing cdrrmo alert: {e}")
         return False
+    
+def get_cdrrmo_recent_counts():
+    try:
+        conn = get_db_connection()
+        # Loads cdrrmo_alert_expire
+        cursor = conn.execute("SELECT type FROM cdrrmo_alert_expire")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Counts the number of BOTH Road Accident and Fire Incident
+        total = sum(1 for r in rows if r['type'] in ['Road Accident', 'Fire Incident'])
+        
+        return jsonify({'total': total})
+    except Exception as e:
+        logger.error(f"Error getting cdrrmo recent counts: {e}")
+        return jsonify({'total': 0})

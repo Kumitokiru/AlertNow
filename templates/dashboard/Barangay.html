@@ -85,6 +85,9 @@
     window.activeMarkers = window.activeMarkers || {};
 
     function loadStoredAlerts() {
+        document.getElementById('live-alert-container').innerHTML = '';
+        document.getElementById('recent-alert-container').innerHTML = '';
+
         fetch('/load_barangay_alerts')
             .then(r => r.json())
             .then(data => {
@@ -100,13 +103,11 @@
             .then(data => {
                 const container = document.getElementById('recent-alert-container');
                 data.forEach(d => {
-                    if (!document.getElementById(`alert-${d.alert_id}`)) {
-                        const row = createExpiredRow(d);
-                        container.appendChild(row);
-                    }
+                    const row = createExpiredRow(d);
+                    container.appendChild(row);
                 });
+                loadRecentCounts();
             });
-        loadRecentCounts();
     }
 
     function loadRecentCounts() {
@@ -129,17 +130,17 @@
         row.id = `alert-${d.alert_id}`;
 
         let dateVal = '';
-        let timeStr = new Date().toLocaleString(); 
-        try { 
+        let timeStr = new Date().toLocaleString();
+        try {
             const dObj = new Date(d.time || d.timestamp);
-            timeStr = dObj.toLocaleString(); 
-            // Standardize format to YYYY-MM-DD for the data attribute matching the input[type=date]
+            timeStr = dObj.toLocaleString();
+            // Standardize format to YYYY-MM-DD for attribute matching
             const year = dObj.getFullYear();
             const month = String(dObj.getMonth() + 1).padStart(2, '0');
             const day = String(dObj.getDate()).padStart(2, '0');
             dateVal = `${year}-${month}-${day}`;
         } catch(e){}
-        
+
         row.setAttribute('data-date', dateVal);
 
 
@@ -477,9 +478,9 @@
 
             let dateVal = '';
             let timeStr = new Date().toLocaleString();
-            try { 
+            try {
                 const dObj = new Date(data.timestamp || data.time || Date.now());
-                timeStr = dObj.toLocaleString(); 
+                timeStr = dObj.toLocaleString();
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
             alertItem.setAttribute('data-date', dateVal);
@@ -859,14 +860,6 @@
             document.getElementById('image-modal').style.display = 'none';
         });
 
-        document.getElementById('recent-date-filter')?.addEventListener('change', (e) => {
-            const selected = e.target.value;
-            document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
-                const date = new Date().toISOString().slice(0,10);
-                item.style.display = (!selected || date === selected) ? 'table-row' : 'none';
-            });
-        });
-
         function notifyAlert(data) {
             const n = document.getElementById('notification');
             n.textContent = `New Alert: ${data.emergency_type || 'Unknown'} at ${data.barangay}`;
@@ -928,7 +921,7 @@
         function updateDateDisplay() {
             const display = document.getElementById('selected-dates-display');
             if (selectedDates.size > 0) {
-                display.textContent = "Selected Dates: " + Array.from(selectedDates).join(', ');
+                display.textContent = "Selected Dates: " + Array.from(selectedDates).sort().join(', ');
             } else {
                 display.textContent = "";
             }
@@ -954,10 +947,9 @@
             csvContent += "Status,Date & Time,Barangay,Type\n";
 
             document.querySelectorAll('#recent-alert-container .alert-row').forEach(row => {
-                // Only download visible (filtered) rows
                 if (row.style.display !== 'none') {
                     const status = row.querySelector('.status-cell').textContent.trim();
-                    const time = row.querySelector('.time-cell').textContent.trim();
+                    const time = row.querySelector('.time-cell').textContent.trim().replace(/"/g, '""');
                     const barangay = row.querySelector('.barangay-cell').textContent.trim();
                     const type = row.querySelector('.type-cell').textContent.trim();
                     

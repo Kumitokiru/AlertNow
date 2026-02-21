@@ -240,3 +240,24 @@ def handle_remove_pnp_alert(alert_id):
     except Exception as e:
         logger.error(f"Error removing pnp alert: {e}")
         return False
+    
+def get_pnp_recent_counts():
+    try:
+        conn = get_db_connection()
+        # Loads pnp_alert_expire
+        cursor = conn.execute("SELECT type FROM pnp_alert_expire")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Counting based on the type
+        road_count = sum(1 for r in rows if r['type'] == 'Road Accident')
+        fire_count = sum(1 for r in rows if r['type'] == 'Fire Incident')
+        
+        return jsonify({
+            'total': road_count + fire_count, # Total of both Road Accident and Fire Incident
+            'road': road_count,
+            'fire': fire_count
+        })
+    except Exception as e:
+        logger.error(f"Error getting pnp recent counts: {e}")
+        return jsonify({'total': 0, 'road': 0, 'fire': 0})

@@ -93,6 +93,20 @@
     const recentAlerts = new Map();
     const alertElements = new Map();
 
+    function loadRecentCounts() {
+        fetch('/api/pnp_recent_counts')
+            .then(r => r.json())
+            .then(data => {
+                const tot = document.getElementById('stat-total-recent');
+                const rd = document.getElementById('stat-road-recent');
+                const fr = document.getElementById('stat-fire-recent');
+                if (tot) tot.textContent = data.total;
+                if (rd) rd.textContent = data.road;
+                if (fr) fr.textContent = data.fire;
+            })
+            .catch(e => console.error("Error loading stats:", e));
+    }
+
     function loadStoredAlerts() {
         fetch('/load_pnp_alerts').then(r => r.json()).then(data => {
             data.forEach(alertData => {
@@ -110,6 +124,15 @@
                 const row = document.createElement('tr');
                 row.className = 'alert-row';
                 row.id = `alert-${d.alert_id}`;
+
+                let dateVal = '';
+                let timeStr = new Date().toLocaleString();
+                try {
+                    const dObj = new Date(d.time);
+                    timeStr = dObj.toLocaleString();
+                    dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
+                } catch(e){}
+                row.setAttribute('data-date', dateVal);
                 
                 // Dynamic Status checking for RESPONDED vs EXPIRED
                 let statusHtml = '';
@@ -129,6 +152,7 @@
                 `;
                 container.appendChild(row);
             });
+            loadRecentCounts();
         });
     }
 
@@ -160,7 +184,7 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({alert_id: alertId, status: status})
-        });
+        }).then(() => loadRecentCounts());
     }
 
     // ROAD ACCIDENT CHARTS
@@ -719,6 +743,15 @@
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
 
+            let dateVal = '';
+            let timeStr = new Date().toLocaleString();
+            try {
+                const dObj = new Date(data.time || Date.now());
+                timeStr = dObj.toLocaleString();
+                dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
+            } catch(e){}
+            alertItem.setAttribute('data-date', dateVal);
+
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
                 <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
@@ -952,14 +985,71 @@
         document.getElementById('image-modal').querySelector('.close-btn').onclick = () => {
             document.getElementById('image-modal').style.display = 'none';
         };
-        document.getElementById('recent-date-filter').addEventListener('change', (e) => {
-            const val = e.target.value;
+        
+        const selectedDates = new Set();
+
+        document.getElementById('add-date-btn')?.addEventListener('click', () => {
+            const dateVal = document.getElementById('recent-date-input').value;
+            if (dateVal) {
+                selectedDates.add(dateVal);
+                updateDateDisplay();
+                filterRecentTable();
+            }
+        });
+
+        document.getElementById('clear-dates-btn')?.addEventListener('click', () => {
+            selectedDates.clear();
+            document.getElementById('recent-date-input').value = '';
+            updateDateDisplay();
+            filterRecentTable();
+        });
+
+        function updateDateDisplay() {
+            const display = document.getElementById('selected-dates-display');
+            if (selectedDates.size > 0) {
+                display.textContent = "Selected Dates: " + Array.from(selectedDates).join(', ');
+            } else {
+                display.textContent = "";
+            }
+        }
+
+        function filterRecentTable() {
             document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
-                const timeText = item.querySelector('.time-cell').textContent;
-                // Basic date string matching (adjust slice if needed based on timezone string length)
-                const date = new Date().toISOString().slice(0,10);
-                item.style.display = (!val || val === date) ? 'table-row' : 'none';
+                if (selectedDates.size === 0) {
+                    item.style.display = 'table-row';
+                } else {
+                    const rowDate = item.getAttribute('data-date');
+                    if (selectedDates.has(rowDate)) {
+                        item.style.display = 'table-row';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
             });
+        }
+
+        document.getElementById('download-csv-btn')?.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Status,Date & Time,Barangay,Type\n";
+
+            document.querySelectorAll('#recent-alert-container .alert-row').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const status = row.querySelector('.status-cell').textContent.trim();
+                    const time = row.querySelector('.time-cell').textContent.trim().replace(/"/g, '""');
+                    const barangay = row.querySelector('.barangay-cell').textContent.trim();
+                    const type = row.querySelector('.type-cell').textContent.trim();
+                    
+                    csvContent += `"${status}","${time}","${barangay}","${type}"\n`;
+                }
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Recent_Alerts_PNP.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
     });
 </script>

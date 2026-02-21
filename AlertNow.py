@@ -67,7 +67,8 @@ from CDRRMODashboard import (
     get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
     save_cdrrmo_officer, get_recent_cdrrmo_officers,
     handle_store_cdrrmo_alert, handle_load_cdrrmo_alerts, 
-    handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent, handle_remove_cdrrmo_alert
+    handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent, handle_remove_cdrrmo_alert,
+    get_cdrrmo_recent_counts
 )
 
 
@@ -76,7 +77,8 @@ from PNPDashboard import (
     get_pnp_responded_count, emit_pnp_alerts_per_month_update,
     save_pnp_officer, get_recent_pnp_officers,
     handle_store_pnp_alert, handle_load_pnp_alerts, 
-    handle_load_pnp_expired, handle_move_pnp_to_recent
+    handle_load_pnp_expired, handle_move_pnp_to_recent,
+    get_pnp_recent_counts
 )
 
 from BFPDashboard import (
@@ -84,7 +86,8 @@ from BFPDashboard import (
     get_bfp_responded_count, emit_bfp_alerts_per_month_update,
     save_bfp_officer, get_recent_bfp_officers,
     handle_store_bfp_alert, handle_load_bfp_alerts,
-    handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert
+    handle_load_bfp_expired, handle_move_bfp_to_recent, handle_remove_bfp_alert,
+    get_bfp_recent_counts
 )
 
 from HealthDashboard import get_health_stats, get_latest_alert
@@ -2365,14 +2368,14 @@ def update_barangay_alert_type_route():
     
     return handle_update_barangay_alert_type(alert_id, emergency_type)
 
-@app.route('/api/barangay_recent_counts')
-def api_barangay_recent_counts():
-    return get_barangay_recent_counts()
+
 
 @app.route('/load_barangay_alerts')
 def load_barangay_alerts_route():
     barangay = session.get('barangay')
     return handle_load_barangay_alerts(barangay) if barangay else jsonify([])
+
+
 
 @app.route('/load_barangay_expired')
 def load_barangay_expired_route():
@@ -2552,6 +2555,25 @@ def remove_cdrrmo_alert_route():
     alert_id = data.get('alert_id')
     success = handle_remove_cdrrmo_alert(alert_id)
     return jsonify({'success': success})
+
+
+@app.route('/api/barangay_recent_counts')
+def api_barangay_recent_counts():
+    return get_barangay_recent_counts()
+
+@app.route('/api/bfp_recent_counts')
+def api_bfp_recent_counts():
+    return get_bfp_recent_counts()
+
+@app.route('/api/cdrrmo_recent_counts')
+def api_cdrrmo_recent_counts():
+    return get_cdrrmo_recent_counts()
+
+@app.route('/api/pnp_recent_counts')
+def api_pnp_recent_counts():
+    return get_pnp_recent_counts()
+
+
 
 if __name__ == '__main__':
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'users_web.db')

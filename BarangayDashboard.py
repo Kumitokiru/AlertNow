@@ -323,10 +323,9 @@ def get_barangay_recent_counts():
         
         conn = get_db_connection()
         # Loading from barangay_alert (and expire for comprehensive recent view)
-        cursor1 = conn.execute("SELECT type FROM barangay_alert WHERE barangay = ?", (barangay,))
-        cursor2 = conn.execute("SELECT type FROM barangay_alert_expire WHERE barangay = ?", (barangay,))
+        cursor = conn.execute("SELECT type FROM barangay_alert_expire WHERE barangay = ?", (barangay,))
         
-        rows = cursor1.fetchall() + cursor2.fetchall()
+        rows = cursor.fetchall()
         conn.close()
         
         # Counting based on the type (which represents the status of the emergency type)
@@ -341,3 +340,4 @@ def get_barangay_recent_counts():
     except Exception as e:
         logger.error(f"Error getting barangay recent counts: {e}")
         return jsonify({'total': 0, 'road': 0, 'fire': 0})
+    
