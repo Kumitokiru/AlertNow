@@ -288,3 +288,29 @@ def handle_remove_barangay_alert(alert_id):
     except Exception as e:
         logger.error(f"Error removing barangay alert: {e}")
         return False
+    
+def handle_store_forwarded(data):
+    try:
+        conn = get_db_connection()
+        target_role = data.get('target_role')
+        timestamp = data.get('timestamp') or datetime.now(pytz.timezone('Asia/Manila')).isoformat()
+        
+        table_map = {
+            'cdrrmo': 'cdrrmo_alert',
+            'bfp': 'bfp_alert',
+            'pnp': 'pnp_alert'
+        }
+        table = table_map.get(target_role)
+        
+        if table:
+            conn.execute(f'''
+                INSERT OR IGNORE INTO {table} (alert_id, status, time, barangay, type, image, lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (data.get('alert_id'), 'PENDING', timestamp, data.get('barangay'), data.get('emergency_type'), data.get('image', ''), data.get('lat'), data.get('lon')))
+            conn.commit()
+            logger.info(f"Explicitly stored forwarded alert into {table}")
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error storing forwarded alert explicitly: {e}")
+        return jsonify({'success': False, 'error': str(e)})

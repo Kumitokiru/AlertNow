@@ -130,13 +130,17 @@
 
         // Load Live Alerts (Pending)
         fetch('/load_bfp_alerts').then(r => r.json()).then(data => {
-            data.forEach(alertData => {
-                alertData.expired = false;
-                alertData.emergency_type = alertData.type;
-                alertData.timestamp = alertData.time;
-                updateUIWithAlert(alertData);
-            });
+        data.forEach(alertData => {
+            updateUIWithAlert(alertData); // Existing UI logic
+
+            // ADDED: Restore markers on map refresh
+            // Note: window.cdrrmoMap must be set during map initialization
+            if (alertData.lat && alertData.lon && window.cdrrmoMap) {
+                L.marker([alertData.lat, alertData.lon]).addTo(window.cdrrmoMap)
+                    .bindPopup(`${alertData.type} at ${alertData.barangay}`);
+            }
         });
+    });
 
         // Load Expired Alerts (Recent)
         fetch('/load_bfp_expired').then(r => r.json()).then(data => {
@@ -413,42 +417,46 @@
             document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
         });
 
+        // Function updated to match your required structure + 30s timer
         function updateUIWithAlert(data) {
             const isLive = data.expired !== true;
             const container = isLive
                 ? document.getElementById('live-alert-container')
                 : document.getElementById('recent-alert-container');
-
-            if (alertElements.has(data.alert_id)) return;
-
+            
             const alertItem = document.createElement('tr');
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
+
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                <td class="time-cell">${new Date(data.timestamp || data.time).toLocaleTimeString()}</td>
+                <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
                 <td class="barangay-cell">${data.barangay}</td>
-                <td class="type-cell">${data.emergency_type || 'Fire Incident'}</td>
+                <td class="type-cell">${data.type || data.emergency_type || 'Fire Incident'}</td>
                 <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
                 <td class="actions-cell"></td>
             `;
-            const actionsCell = alertItem.querySelector('.actions-cell');
 
-            if (isLive) {
-                showResponseForm(actionsCell, data);
-            }
+            const actionsCell = alertItem.querySelector('.actions-cell');
+            showResponseForm(actionsCell, data);
 
             alertElements.set(data.alert_id, alertItem);
+            container.appendChild(alertItem);
             
-            if (isLive) {
-                container.insertBefore(alertItem, container.firstChild);
-                liveAlerts.set(data.alert_id, { element: alertItem });
-                // We DO NOT set the timer here anymore. Timer starts upon SUBMIT.
-            } else {
-                container.appendChild(alertItem);
-            }
             updateTotalIncidents();
+            alertItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (data.lat && data.lon && window.bfpMap) {
+                L.marker([data.lat, data.lon]).addTo(window.bfpMap);
+            }
+
+            if (isLive) {
+                setTimeout(() => {
+                    moveToRecent(data.alert_id);
+                }, 30000);
+            }
         }
+        
 
         function showResponseForm(container, data) {
             container.innerHTML = '';

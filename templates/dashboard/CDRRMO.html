@@ -145,10 +145,14 @@
         function loadStoredAlerts() {
             fetch('/load_cdrrmo_alerts').then(r => r.json()).then(data => {
                 data.forEach(alertData => {
-                    alertData.expired = false;
-                    alertData.emergency_type = alertData.type;
-                    alertData.timestamp = alertData.time;
-                    updateUIWithAlert(alertData);
+                    updateUIWithAlert(alertData); // Existing UI logic
+
+                    // ADDED: Restore markers on map refresh
+                    // Note: window.cdrrmoMap must be set during map initialization
+                    if (alertData.lat && alertData.lon && window.cdrrmoMap) {
+                        L.marker([alertData.lat, alertData.lon]).addTo(window.cdrrmoMap)
+                            .bindPopup(`${alertData.type} at ${alertData.barangay}`);
+                    }
                 });
             });
             fetch('/load_cdrrmo_expired').then(r => r.json()).then(data => {
@@ -617,16 +621,14 @@
 
                 alertItem.innerHTML = `
                     <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                    <td class="time-cell">${new Date().toLocaleTimeString()}</td>
+                    <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
                     <td class="barangay-cell">${data.barangay}</td>
-                    <td class="type-cell">${data.emergency_type || 'Road Accident'}</td>
+                    <td class="type-cell">${data.type || data.emergency_type || 'Incident'}</td>
                     <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
                     <td class="actions-cell"></td>
                 `;
 
                 const actionsCell = alertItem.querySelector('.actions-cell');
-                
-                // SHOW RESPONSE FORM DIRECTLY (Combined Dropdowns)
                 showResponseForm(actionsCell, data);
 
                 alertElements.set(data.alert_id, alertItem);
@@ -635,10 +637,18 @@
                 
                 updateTotalIncidents();
 
-                    // Auto-scroll to new alert
-                    alertItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // MAP PERSISTENCE: Add marker if coordinates exist
+                if (data.lat && data.lon && window.cdrrmoMap) {
+                    L.marker([data.lat, data.lon]).addTo(window.cdrrmoMap)
+                        .bindPopup(`${data.type || 'Alert'} at ${data.barangay}`);
+                }
 
-                    
+                // 30-SECOND EXPIRATION LOGIC
+                if (isLive) {
+                    setTimeout(() => {
+                        moveToRecent(data.alert_id);
+                    }, 30000);
+                }
             }
 
             // Listen for alerts redirected from Barangay
@@ -781,10 +791,7 @@
                         body: JSON.stringify({alert_id: data.alert_id})
                     });
                     
-                    // Remove from UI
-                    const timer = setTimeout(() => moveToRecent(data.alert_id), 30000);
-                    liveAlerts.set(data.alert_id, { element: alertItem, timer });
-                    if (alertItem) alertItem.remove();
+                    
                 };
                 form.appendChild(submitBtn);
                 container.appendChild(form);

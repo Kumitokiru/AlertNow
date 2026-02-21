@@ -197,19 +197,19 @@ def handle_load_cdrrmo_expired():
 def handle_move_cdrrmo_to_recent(alert_id):
     try:
         conn = get_db_connection()
+        # Fetch 8 columns: alert_id, status, time, barangay, type, image, lat, lon
         alert = conn.execute("SELECT * FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,)).fetchone()
         if alert:
             conn.execute('''
-                INSERT OR IGNORE INTO cdrrmo_alert_expire (alert_id, status, time, barangay, type, image)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+                INSERT OR IGNORE INTO cdrrmo_alert_expire (alert_id, status, time, barangay, type, image, lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image'], alert['lat'], alert['lon']))
             conn.execute("DELETE FROM cdrrmo_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
-        logger.error(f"Error moving cdrrmo alert to recent: {e}")
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': str(e)})
 
 def handle_remove_cdrrmo_alert(alert_id):
     try:
@@ -221,3 +221,4 @@ def handle_remove_cdrrmo_alert(alert_id):
     except Exception as e:
         logger.error(f"Error removing cdrrmo alert: {e}")
         return False
+    

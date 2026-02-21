@@ -220,16 +220,15 @@ def handle_move_pnp_to_recent(alert_id):
         alert = conn.execute("SELECT * FROM pnp_alert WHERE alert_id = ?", (alert_id,)).fetchone()
         if alert:
             conn.execute('''
-                INSERT OR IGNORE INTO pnp_alert_expire (alert_id, status, time, barangay, type, image)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image']))
+                INSERT OR IGNORE INTO pnp_alert_expire (alert_id, status, time, barangay, type, image, lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image'], alert['lat'], alert['lon']))
             conn.execute("DELETE FROM pnp_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
-        logger.error(f"Error moving pnp alert to recent: {e}")
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': str(e)})
 
 def handle_remove_pnp_alert(alert_id):
     try:
@@ -241,3 +240,4 @@ def handle_remove_pnp_alert(alert_id):
     except Exception as e:
         logger.error(f"Error removing pnp alert: {e}")
         return False
+    

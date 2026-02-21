@@ -59,7 +59,7 @@ from BarangayDashboard import (
     save_officer, get_recent_officers,
     handle_store_barangay_alert, handle_load_barangay_alerts,
     handle_load_barangay_expired, handle_move_barangay_to_recent, handle_update_barangay_alert_type, # Ensure this is imported
-    handle_remove_barangay_alert
+    handle_remove_barangay_alert, handle_store_forwarded
 )
 
 from CDRRMODashboard import (
@@ -751,6 +751,8 @@ def handle_redirect_alert(data):
         if target_role not in valid_roles:
             return
 
+        handle_store_forwarded(data)
+        
         room = f"{target_role}_{municipality}"
         emit('redirected_alert', data, room=room)
         
@@ -794,6 +796,9 @@ def handle_redirect_alert(data):
     except Exception as e:
         logger.error(f"Error in handle_redirect_alert: {e}")
 
+@app.route('/store_forwarded', methods=['POST'])
+def store_forwarded_route():
+    return handle_store_forwarded(request.get_json())
 
 @socketio.on('pnp_redirect_alert')
 def handle_pnp_redirect_alert(data):
@@ -822,6 +827,8 @@ def handle_pnp_redirect_alert(data):
         logger.error(f"Error storing PNP alert: {e}")
     finally:
         conn.close()
+        
+    handle_store_pnp_alert(data)
 
     # Emit to PNP room
     pnp_room = f"pnp_{data.get('municipality', '').lower()}"
@@ -2509,6 +2516,26 @@ def delete_pnp_alert_route():
     except Exception as e:
         logger.error(f"Error deleting pnp alert: {e}")
         return jsonify({'success': False, 'error': str(e)})
+    
+    
+@app.route('/store_agency_alert', methods=['POST'])
+def store_agency_alert():
+    """Explicitly store forwarded alerts into their respective agency tables."""
+    data = request.get_json()
+    target_role = data.get('target_role')
+    
+    try:
+        if target_role == 'cdrrmo':
+            handle_store_cdrrmo_alert(data)
+        elif target_role == 'bfp':
+            handle_store_bfp_alert(data)
+        elif target_role == 'pnp':
+            handle_store_pnp_alert(data)
+            
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error in store_agency_alert: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'users_web.db')
@@ -2848,6 +2875,14 @@ if __name__ == '__main__':
         c.execute('''CREATE TABLE IF NOT EXISTS pnp_alert_expire (
             alert_id TEXT PRIMARY KEY, status TEXT, time TEXT, barangay TEXT, type TEXT, image TEXT
         )''')
+        
+        tables = ['barangay_alert', 'barangay_alert_expire', 'cdrrmo_alert', 'cdrrmo_alert_expire', 'bfp_alert', 'bfp_alert_expire', 'pnp_alert', 'pnp_alert_expire']
+        for table in tables:
+            try:
+                c.execute(f"ALTER TABLE {table} ADD COLUMN lat REAL")
+                c.execute(f"ALTER TABLE {table} ADD COLUMN lon REAL")
+            except sqlite3.OperationalError:
+                pass # Columns already exist
         conn.commit()
         conn.close()
         logger.info("barangay_response initialized successfully in users_web.db")
