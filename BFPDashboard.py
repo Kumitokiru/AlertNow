@@ -184,18 +184,23 @@ def handle_load_bfp_expired():
 def handle_move_bfp_to_recent(alert_id):
     try:
         conn = get_db_connection()
+        # Fetching all 8 columns from bfp_alert to ensure no data loss
         alert = conn.execute("SELECT * FROM bfp_alert WHERE alert_id = ?", (alert_id,)).fetchone()
         if alert:
+            # Insert into expire table including lat and lon for map persistence
             conn.execute('''
                 INSERT OR IGNORE INTO bfp_alert_expire (alert_id, status, time, barangay, type, image, lat, lon)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (alert['alert_id'], 'EXPIRED', alert['time'], alert['barangay'], alert['type'], alert['image'], alert['lat'], alert['lon']))
+            
+            # Remove from live alert table
             conn.execute("DELETE FROM bfp_alert WHERE alert_id = ?", (alert_id,))
             conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f"Error moving BFP alert to recent: {e}")
+        return jsonify({'success': False})
 
 def handle_remove_bfp_alert(alert_id):
     try:

@@ -1,1304 +1,931 @@
 <script>
-        window.activeMarkers = window.activeMarkers || {};
-
-        let menuData = {
-            'Road Accident': {
-                'Combined Cause and Type': [
-                    'Head-on Collision, Overspeeding', 'Head-on Collision, Distracted Driving', 'Head-on Collision, Drunk Driving',
-                    'Head-on Collision, Reckless Driving', 'Head-on Collision, Fatigue', 'Head-on Collision, Inexperience',
-                    'Head-on Collision, Mechanical Failure', 'Head-on Collision, Poor Maintenance', 'Head-on Collision, Overloading',
-                    'Rear-end Collision, Overspeeding', 'Rear-end Collision, Distracted Driving', 'Rear-end Collision, Drunk Driving',
-                    'Rear-end Collision, Reckless Driving', 'Rear-end Collision, Fatigue', 'Rear-end Collision, Inexperience',
-                    'Rear-end Collision, Mechanical Failure', 'Rear-end Collision, Poor Maintenance', 'Rear-end Collision, Overloading',
-                    'Side-impact Collision, Overspeeding', 'Side-impact Collision, Distracted Driving', 'Side-impact Collision, Drunk Driving',
-                    'Side-impact Collision, Reckless Driving', 'Side-impact Collision, Fatigue', 'Side-impact Collision, Inexperience',
-                    'Side-impact Collision, Mechanical Failure', 'Side-impact Collision, Poor Maintenance', 'Side-impact Collision, Overloading',
-                    'Single Vehicle Accident, Overspeeding', 'Single Vehicle Accident, Distracted Driving', 'Single Vehicle Accident, Drunk Driving',
-                    'Single Vehicle Accident, Reckless Driving', 'Single Vehicle Accident, Fatigue', 'Single Vehicle Accident, Inexperience',
-                    'Single Vehicle Accident, Mechanical Failure', 'Single Vehicle Accident, Poor Maintenance', 'Single Vehicle Accident, Overloading',
-                    'Pedestrian Accident, Overspeeding', 'Pedestrian Accident, Distracted Driving', 'Pedestrian Accident, Drunk Driving',
-                    'Pedestrian Accident, Reckless Driving', 'Pedestrian Accident, Fatigue', 'Pedestrian Accident, Inexperience',
-                    'Pedestrian Accident, Mechanical Failure', 'Pedestrian Accident, Poor Maintenance', 'Pedestrian Accident, Overloading'
-                ],
-                'Combined Weather and Road': [
-                    'Sunny, Dry', 'Sunny, Wet', 'Sunny, Dark', 'Sunny, Potholes', 'Sunny, Gravel',
-                    'Night, Dry', 'Night, Wet', 'Night, Dark', 'Night, Potholes', 'Night, Gravel',
-                    'Rainy, Dry', 'Rainy, Wet', 'Rainy, Dark', 'Rainy, Potholes', 'Rainy, Gravel',
-                    'Foggy, Dry', 'Foggy, Wet', 'Cloudy, Dry', 'Cloudy, Wet', 'Stormy, Wet'
-                ],
-                'Vehicle Types': ['Car', 'Motorcycle', 'Truck', 'Bus', 'Bicycle', 'Car and Motorcycle', 'Car and Bus', 'Car and Truck', 'Car and Bicycle', 'Motorcycle and Car', 'Motorcycle and Bus', 'Motorcycle and Truck', 'Motorcycle and Bicycle', 'Truck and Car', 'Truck and Motorcycle', 'Truck and Bus', 'Truck and Bicycle', 'Bus and Car', 'Bus and Motorcycle', 'Bus and Truck', 'Bus and Bicycle', 'Bicycle and Car', 'Bicycle and Motorcycle', 'Bicycle and Bus', 'Bicycle and Truck'],
-                'Driver Ages': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+'],
-                'Driver Gender': ['Male', 'Female']
-            },
-            'Fire Incident': {
-                'Fire Cause': [
-                    'Electrical ignition caused by loose connection', 'Electrical ignition caused by overloading',  'Electrical ignition due to pinched wire',
-                    'Electrical ignition caused by arcing', 'Overheated industrial machinery', 'Sparks from machinery', 'Overheated home appliances', 'Electrical post fire to structural fire',
-                    'Transformer pole fire to structural fire', 'Open flame from cooking (LPG / gas stove, firewood)', 'Open flame from unattended lighted candle',
-                    'Open flame from kerosene lamp (gasera) / lighting torch (sulo)', 'Open flame from rubbish fire / bonfire to structural fire',
-                    'Open flame from farmland / agricultural land clearing operation', 'Open flame from kaingin (slash and burn)',
-                    'Ignition caused by firecracker explosion',
-                    'Ignition caused by fireworks / pyrotechnics explosion',
-                    'Ignition caused by bomb explosion',
-                    'Spontaneous combustion of chemicals',
-                    'Spontaneous combustion of solid materials',
-                    'Intentional fire by use of incendiary device or mechanism',
-                    'Intentional fire by use of flammable liquid',
-                    'Intentional fire by use of open flame (matchstick or lighter or light torch)',
-                    'Ignition of material caused by welding slags',
-                    'Ignition of materials caused by acetylene / other hot works',
-                    'LPG explosion caused by defective tank',
-                    'LPG explosion caused by defective hose line',
-                    'LPG explosion caused by defective regulator',
-                    'LPG explosion caused by defective stove',
-                    'LPG explosion caused by static electricity or spark',
-                    'Fire caused by lightning',
-                    'Ignition of materials from ember / flying ember or alipato',
-                    'Smoking (lighted cigarette, cigar or pipe)',
-                    'Children playing matchstick or lighter',
-                    'Battery short circuit or battery explosion',
-                    'Dust explosion',
-                    'Magnified / amplified sun rays',
-                    'Overheated engine (motor vehicles)',
-                    'Sky lantern',
-                    'Fire incident under investigation (on process)',
-                    'Undetermined fire cause (on pending investigation)'
-                ],
-                'Occupancy Type': [
-                    'Assembly', 'Educational', 'Day-Care', 'Health Care',
-                    'Detention & Correctional / Institutional', 'Residential',
-                    'Mercantile', 'Business', 'Industrial', 'Storage',
-                    'Mixed Occupancies', 'Miscellaneous Occupancies'
-                ],
-                'Class': {
-                    'CLASS A': 'Ordinary Combustibles\n(Wood, paper, cloth, plastic, rubber, trash, and other common combustible materials. Extinguishing Method: Water, foam, dry chemical.)',
-                    'CLASS B': 'Flammable Liquids & Gases\n(Gasoline, diesel, alcohol, paints, solvents, kerosene, LPG, acetylene, etc. Extinguishing Method: Foam, dry chemical (ABC/BC), CO2. Do NOT use water - it spreads the flammable liquid.)',
-                    'CLASS C': 'Energized Electrical Equipment\n(Electrical panels, wirings, appliances, transformers, computers, breakers. Extinguishing Method: Dry chemical, CO2.)',
-                    'CLASS D': 'Combustible Metals\n(Magnesium, titanium, sodium, potassium, zirconium, lithium. Extinguishing Method: Special Class D dry powder extinguishers. Do NOT use water - it reacts violently.)',
-                    'CLASS K (or Class F)': 'Cooking Oils & Fats\n(Hot oils and fats from deep fryers, lard, shortening, grease.)'
-                }
-            },
-            'Crime Incident': {
-                'Crime Types': ['Theft', 'Assault', 'Burglary', 'Robbery', 'Vandalism', 'Harassment', 'Domestic Violence', 'Drug-Related', 'Fraud'],
-                'Crime Causes': ['Poverty', 'Unemployment', 'Alcohol', 'Drugs', 'Personal Dispute', 'Gang Activity', 'Opportunistic', 'Domestic Issue', 'Mental Health'],
-                'Levels': ['Low', 'Medium', 'High'],
-                'Suspect Gender': ['Male', 'Female'],
-                'Victim Gender': ['Male', 'Female'],
-                'Suspect Age': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+'],
-                'Victim Age': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+']
+    window.activeMarkers = window.activeMarkers || {};
+    let menuData = {
+        'Road Accident': {
+            'Combined Cause and Type': [
+                'Head-on Collision, Overspeeding', 'Head-on Collision, Distracted Driving', 'Head-on Collision, Drunk Driving',
+                'Head-on Collision, Reckless Driving', 'Head-on Collision, Fatigue', 'Head-on Collision, Inexperience',
+                'Head-on Collision, Mechanical Failure', 'Head-on Collision, Poor Maintenance', 'Head-on Collision, Overloading',
+                'Rear-end Collision, Overspeeding', 'Rear-end Collision, Distracted Driving', 'Rear-end Collision, Drunk Driving',
+                'Rear-end Collision, Reckless Driving', 'Rear-end Collision, Fatigue', 'Rear-end Collision, Inexperience',
+                'Rear-end Collision, Mechanical Failure', 'Rear-end Collision, Poor Maintenance', 'Rear-end Collision, Overloading',
+                'Side-impact Collision, Overspeeding', 'Side-impact Collision, Distracted Driving', 'Side-impact Collision, Drunk Driving',
+                'Side-impact Collision, Reckless Driving', 'Side-impact Collision, Fatigue', 'Side-impact Collision, Inexperience',
+                'Side-impact Collision, Mechanical Failure', 'Side-impact Collision, Poor Maintenance', 'Side-impact Collision, Overloading',
+                'Single Vehicle Accident, Overspeeding', 'Single Vehicle Accident, Distracted Driving', 'Single Vehicle Accident, Drunk Driving',
+                'Single Vehicle Accident, Reckless Driving', 'Single Vehicle Accident, Fatigue', 'Single Vehicle Accident, Inexperience',
+                'Single Vehicle Accident, Mechanical Failure', 'Single Vehicle Accident, Poor Maintenance', 'Single Vehicle Accident, Overloading',
+                'Pedestrian Accident, Overspeeding', 'Pedestrian Accident, Distracted Driving', 'Pedestrian Accident, Drunk Driving',
+                'Pedestrian Accident, Reckless Driving', 'Pedestrian Accident, Fatigue', 'Pedestrian Accident, Inexperience',
+                'Pedestrian Accident, Mechanical Failure', 'Pedestrian Accident, Poor Maintenance', 'Pedestrian Accident, Overloading'
+            ],
+            'Combined Weather and Road': [
+                'Sunny, Dry', 'Sunny, Wet', 'Sunny, Dark', 'Sunny, Potholes', 'Sunny, Gravel',
+                'Night, Dry', 'Night, Wet', 'Night, Dark', 'Night, Potholes', 'Night, Gravel',
+                'Rainy, Dry', 'Rainy, Wet', 'Rainy, Dark', 'Rainy, Potholes', 'Rainy, Gravel',
+                'Foggy, Dry', 'Foggy, Wet', 'Cloudy, Dry', 'Cloudy, Wet', 'Stormy, Wet'
+            ],
+            'Vehicle Types': ['Car', 'Motorcycle', 'Truck', 'Bus', 'Bicycle', 'Car and Motorcycle', 'Car and Bus', 'Car and Truck', 'Car and Bicycle', 'Motorcycle and Car', 'Motorcycle and Bus', 'Motorcycle and Truck', 'Motorcycle and Bicycle', 'Truck and Car', 'Truck and Motorcycle', 'Truck and Bus', 'Truck and Bicycle', 'Bus and Car', 'Bus and Motorcycle', 'Bus and Truck', 'Bus and Bicycle', 'Bicycle and Car', 'Bicycle and Motorcycle', 'Bicycle and Bus', 'Bicycle and Truck'],
+            'Driver Ages': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+'],
+            'Driver Gender': ['Male', 'Female']
+        },
+        'Fire Incident': {
+            'Fire Cause': [
+                'Electrical ignition caused by loose connection', 'Electrical ignition caused by overloading',  'Electrical ignition due to pinched wire',
+                'Electrical ignition caused by arcing', 'Overheated industrial machinery', 'Sparks from machinery', 'Overheated home appliances', 'Electrical post fire to structural fire',
+                'Transformer pole fire to structural fire', 'Open flame from cooking (LPG / gas stove, firewood)', 'Open flame from unattended lighted candle',
+                'Open flame from kerosene lamp (gasera) / lighting torch (sulo)', 'Open flame from rubbish fire / bonfire to structural fire',
+                'Open flame from farmland / agricultural land clearing operation', 'Open flame from kaingin (slash and burn)',
+                'Ignition caused by firecracker explosion',
+                'Ignition caused by fireworks / pyrotechnics explosion',
+                'Ignition caused by bomb explosion',
+                'Spontaneous combustion of chemicals',
+                'Spontaneous combustion of solid materials',
+                'Intentional fire by use of incendiary device or mechanism',
+                'Intentional fire by use of flammable liquid',
+                'Intentional fire by use of open flame (matchstick or lighter or light torch)',
+                'Ignition of material caused by welding slags',
+                'Ignition of materials caused by acetylene / other hot works',
+                'LPG explosion caused by defective tank',
+                'LPG explosion caused by defective hose line',
+                'LPG explosion caused by defective regulator',
+                'LPG explosion caused by defective stove',
+                'LPG explosion caused by static electricity or spark',
+                'Fire caused by lightning',
+                'Ignition of materials from ember / flying ember or alipato',
+                'Smoking (lighted cigarette, cigar or pipe)',
+                'Children playing matchstick or lighter',
+                'Battery short circuit or battery explosion',
+                'Dust explosion',
+                'Magnified / amplified sun rays',
+                'Overheated engine (motor vehicles)',
+                'Sky lantern',
+                'Fire incident under investigation (on process)',
+                'Undetermined fire cause (on pending investigation)'
+            ],
+            'Occupancy Type': [
+                'Assembly', 'Educational', 'Day-Care', 'Health Care',
+                'Detention & Correctional / Institutional', 'Residential',
+                'Mercantile', 'Business', 'Industrial', 'Storage',
+                'Mixed Occupancies', 'Miscellaneous Occupancies'
+            ],
+            'Class': {
+                'CLASS A': 'Ordinary Combustibles\n(Wood, paper, cloth, plastic, rubber, trash, and other common combustible materials. Extinguishing Method: Water, foam, dry chemical.)',
+                'CLASS B': 'Flammable Liquids & Gases\n(Gasoline, diesel, alcohol, paints, solvents, kerosene, LPG, acetylene, etc. Extinguishing Method: Foam, dry chemical (ABC/BC), CO2. Do NOT use water - it spreads the flammable liquid.)',
+                'CLASS C': 'Energized Electrical Equipment\n(Electrical panels, wirings, appliances, transformers, computers, breakers. Extinguishing Method: Dry chemical, CO2.)',
+                'CLASS D': 'Combustible Metals\n(Magnesium, titanium, sodium, potassium, zirconium, lithium. Extinguishing Method: Special Class D dry powder extinguishers. Do NOT use water - it reacts violently.)',
+                'CLASS K (or Class F)': 'Cooking Oils & Fats\n(Hot oils and fats from deep fryers, lard, shortening, grease.)'
             }
+        },
+        'Crime Incident': {
+            'Crime Types': ['Theft', 'Assault', 'Burglary', 'Robbery', 'Vandalism', 'Harassment', 'Domestic Violence', 'Drug-Related', 'Fraud'],
+            'Crime Causes': ['Poverty', 'Unemployment', 'Alcohol', 'Drugs', 'Personal Dispute', 'Gang Activity', 'Opportunistic', 'Domestic Issue', 'Mental Health'],
+            'Levels': ['Low', 'Medium', 'High'],
+            'Suspect Gender': ['Male', 'Female'],
+            'Victim Gender': ['Male', 'Female'],
+            'Suspect Age': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+'],
+            'Victim Age': ['0-17', '18-25', '26-35', '36-45', '46-60', '61+']
+        }
+    };
+
+    const alertTimers = new Map();
+    const liveAlerts = new Map();
+    const recentAlerts = new Map();
+    const alertElements = new Map();
+
+    function loadStoredAlerts() {
+        fetch('/load_pnp_alerts').then(r => r.json()).then(data => {
+            data.forEach(alertData => {
+                updateUIWithAlert(alertData); 
+                if (alertData.lat && alertData.lon && window.pnpMap) {
+                    L.marker([alertData.lat, alertData.lon]).addTo(window.pnpMap)
+                    .bindPopup(`${alertData.type} at ${alertData.barangay}`);
+                }
+            });
+        });
+
+        fetch('/load_pnp_expired').then(r => r.json()).then(data => {
+            const container = document.getElementById('recent-alert-container');
+            data.forEach(d => {
+                const row = document.createElement('tr');
+                row.className = 'alert-row';
+                row.id = `alert-${d.alert_id}`;
+                
+                // Dynamic Status checking for RESPONDED vs EXPIRED
+                let statusHtml = '';
+                if (d.status === 'RESPONDED') {
+                    statusHtml = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+                } else {
+                    statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+                }
+
+                row.innerHTML = `
+                    <td class="status-cell">${statusHtml}</td>
+                    <td class="time-cell">${new Date(d.time).toLocaleTimeString()}</td>
+                    <td class="barangay-cell">${d.barangay}</td>
+                    <td class="type-cell">${d.type}</td>
+                    <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px;" onclick="showImage('${d.image}')" />` : 'No Image'}</td>
+                    <td class="actions-cell"></td>
+                `;
+                container.appendChild(row);
+            });
+        });
+    }
+
+    function moveToRecent(alertId, status = 'EXPIRED') {
+        if (!liveAlerts.has(alertId)) return;
+        const { element } = liveAlerts.get(alertId);
+        liveAlerts.delete(alertId);
+        
+        if (alertTimers.has(alertId)) {
+            clearTimeout(alertTimers.get(alertId));
+            alertTimers.delete(alertId);
+        }
+
+        recentAlerts.set(alertId, { element, timestamp: Date.now() });
+
+        // Set Dynamic Status text & color
+        let statusHtml = '';
+        if (status === 'RESPONDED') {
+            statusHtml = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
+        } else {
+            statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+        }
+        element.querySelector('.status-cell').innerHTML = statusHtml;
+        
+        document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
+
+        // Pass the correct status to backend
+        fetch('/expire_pnp_alert', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({alert_id: alertId, status: status})
+        });
+    }
+
+    // ROAD ACCIDENT CHARTS
+    let yearlyPredictionChart = null;
+    let monthlyComparisonChart = null;
+    let julDecChart = null;
+    // FIRE INCIDENT CHARTS
+    let fireYearlyChart = null;
+    let fireMonthlyChart = null;
+    let fireJulDecChart = null;
+
+    function random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function parsePrediction(full, monthly, julDec) {
+        const fullMatch = full.match(/(\d+\.\d+)%/);
+        const monthlyMatch = monthly.match(/(\d+\.\d+)%/);
+        const julDecMatch = julDec.match(/(\d+\.\d+)%/);
+        return {
+            full: fullMatch ? parseFloat(fullMatch[1]) : 50,
+            monthly: monthlyMatch ? parseFloat(monthlyMatch[1]) : 60,
+            julDec: julDecMatch ? parseFloat(julDecMatch[1]) : 70
         };
+    }
 
-        const alertTimers = new Map();
+    function updateRoadCharts(data) {
+        const fullText = data.full_year || "2023 Full Year: 50.0% Risk";
+        const monthlyText = data.monthly || "2023 Monthly: 60.0% Risk";
+        const julDecText = data.jul_dec || "July-Dec 2023: 70.0% Risk";
+        const { full, monthly, julDec } = parsePrediction(fullText, monthlyText, julDecText);
 
-        function loadStoredAlerts() {
-            fetch('/load_pnp_alerts').then(r => r.json()).then(data => {
-                data.forEach(alertData => {
-                    updateUIWithAlert(alertData); // Existing UI logic
+        let full2023Count = Math.round((full / 100) * 150);
+        let monthly2023Count = Math.round((monthly / 100) * 150);
+        let julDec2023Count = Math.round((julDec / 100) * 90);
 
-                    // ADDED: Restore markers on map refresh
-                    // Note: window.cdrrmoMap must be set during map initialization
-                    if (alertData.lat && alertData.lon && window.cdrrmoMap) {
-                        L.marker([alertData.lat, alertData.lon]).addTo(window.cdrrmoMap)
-                            .bindPopup(`${alertData.type} at ${alertData.barangay}`);
+        full2023Count += Math.round(random(-12, 15));     
+        monthly2023Count += Math.round(random(-15, 18));
+        julDec2023Count += Math.round(random(-18, 20));
+
+        full2023Count = Math.max(60, Math.min(190, full2023Count));
+        monthly2023Count = Math.max(70, Math.min(180, monthly2023Count));
+        julDec2023Count = Math.max(50, Math.min(130, julDec2023Count));
+
+        if (yearlyPredictionChart) {
+            yearlyPredictionChart.data.datasets[0].data[3] = full2023Count;
+            yearlyPredictionChart.options.plugins.title.text = fullText;
+            yearlyPredictionChart.update('active');
+        }
+        if (monthlyComparisonChart) {
+            const base2022 = [28,32,35,30,40,38,42,45,41,36,33,30];
+            const monthly2023 = base2022.map(v => {
+                const ratio = monthly2023Count / 92;
+                const variation = random(-18, 22);  
+                return Math.max(0, Math.round(v * ratio + variation));
+            });
+            monthlyComparisonChart.data.datasets[1].data = monthly2023;
+            monthlyComparisonChart.options.plugins.title.text = monthlyText;
+            monthlyComparisonChart.update('active');
+        }
+        if (julDecChart) {
+            const baseJulDec2022 = [42,45,41,36,33,30];
+            const forecastJulDec = baseJulDec2022.map(v => {
+                const ratio = julDec2023Count / 75;
+                const variation = random(-20, 25);  
+                return Math.max(0, Math.round(v * ratio + variation));
+            });
+            julDecChart.data.datasets[1].data = [null,null,null,null,null,null,...forecastJulDec];
+            julDecChart.options.plugins.title.text = julDecText;
+            julDecChart.update('active');
+        }
+        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateFireCharts(data) {
+        const arimaFull    = data.arima_full    || "Fire 2023 Full Year (ARIMA): 50.0% Risk";
+        const arimaMonthly = data.arima_monthly || "Fire 2023 Monthly (ARIMA): 60.0% Risk";
+        const arimaJulDec  = data.arima_jul_dec || "Fire July-Dec 2023 (ARIMA): 70.0% Risk";
+        const arimaxFull    = data.arimax_full    || "Fire 2023 Full Year (ARIMAX): 50.0% Risk";
+        const arimaxMonthly = data.arimax_monthly || "Fire 2023 Monthly (ARIMAX): 60.0% Risk";
+        const arimaxJulDec  = data.arimax_jul_dec || "Fire July-Dec 2023 (ARIMAX): 70.0% Risk";
+        const sarimaFull    = data.sarima_full    || "Fire 2023 Full Year (SARIMA): 50.0% Risk";
+        const sarimaMonthly = data.sarima_monthly || "Fire 2023 Monthly (SARIMA): 60.0% Risk";
+        const sarimaJulDec  = data.sarima_jul_dec || "Fire July-Dec 2023 (SARIMA): 70.0% Risk";
+        const sarimaxFull    = data.sarimax_full    || "Fire 2023 Full Year (SARIMAX): 50.0% Risk";
+        const sarimaxMonthly = data.sarimax_monthly || "Fire 2023 Monthly (SARIMAX): 60.0% Risk";
+        const sarimaxJulDec  = data.sarimax_jul_dec || "Fire July-Dec 2023 (SARIMAX): 70.0% Risk";
+
+        const arima   = parsePrediction(arimaFull,    arimaMonthly,   arimaJulDec);
+        const arimax  = parsePrediction(arimaxFull,   arimaxMonthly,  arimaxJulDec);
+        const sarima  = parsePrediction(sarimaFull,   sarimaMonthly,  sarimaJulDec);
+        const sarimax = parsePrediction(sarimaxFull,  sarimaxMonthly, sarimaxJulDec);
+
+        const arimaFullRand    = Math.round(random(-15, 18));
+        const arimaxFullRand   = Math.round(random(-15, 18));
+        const sarimaFullRand   = Math.round(random(-15, 18));
+        const sarimaxFullRand  = Math.round(random(-15, 18));
+        const arimaMonthRand   = Math.round(random(-18, 22));
+        const arimaxMonthRand  = Math.round(random(-18, 22));
+        const sarimaMonthRand  = Math.round(random(-18, 22));
+        const sarimaxMonthRand = Math.round(random(-18, 22));
+        const arimaJulRand     = Math.round(random(-20, 25));
+        const arimaxJulRand    = Math.round(random(-20, 25));
+        const sarimaJulRand    = Math.round(random(-20, 25));
+        const sarimaxJulRand   = Math.round(random(-20, 25));
+
+        const arimaFullCount    = Math.round((arima.full    / 100) * 150) + arimaFullRand;
+        const arimaxFullCount   = Math.round((arimax.full   / 100) * 150) + arimaxFullRand;
+        const sarimaFullCount   = Math.round((sarima.full   / 100) * 150) + sarimaFullRand;
+        const sarimaxFullCount  = Math.round((sarimax.full  / 100) * 150) + sarimaxFullRand;
+        const arimaMonthlyCount  = Math.round((arima.monthly  / 100) * 150) + arimaMonthRand;
+        const arimaxMonthlyCount = Math.round((arimax.monthly / 100) * 150) + arimaxMonthRand;
+        const sarimaMonthlyCount = Math.round((sarima.monthly / 100) * 150) + sarimaMonthRand;
+        const sarimaxMonthlyCount = Math.round((sarimax.monthly/ 100) * 150) + sarimaxMonthRand;
+        const arimaJulDecCount   = Math.round((arima.julDec   / 100) * 90) + arimaJulRand;
+        const arimaxJulDecCount  = Math.round((arimax.julDec  / 100) * 90) + arimaxJulRand;
+        const sarimaJulDecCount  = Math.round((sarima.julDec  / 100) * 90) + sarimaJulRand;
+        const sarimaxJulDecCount = Math.round((sarimax.julDec / 100) * 90) + sarimaxJulRand;
+
+        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+        if (fireYearlyChart) {
+            fireYearlyChart.data.datasets[0].data[3] = 48;  
+            fireYearlyChart.data.datasets[1].data[3] = clamp(arimaFullCount,   60, 190);  
+            fireYearlyChart.data.datasets[2].data[3] = clamp(arimaxFullCount,  60, 190);  
+            fireYearlyChart.data.datasets[3].data[3] = clamp(sarimaFullCount,  60, 190);  
+            fireYearlyChart.data.datasets[4].data[3] = clamp(sarimaxFullCount, 60, 190);  
+            fireYearlyChart.options.plugins.title.text = `Fire Yearly - ARIMA: ${arima.full.toFixed(1)}% | ARIMAX: ${arimax.full.toFixed(1)}% | SARIMA: ${sarima.full.toFixed(1)}% | SARIMAX: ${sarimax.full.toFixed(1)}%`;
+            fireYearlyChart.update('active');
+        }
+
+        if (fireMonthlyChart) {
+            const base2022Fire = [15,18,22,16,25,20,28,30,26,22,19,17];
+            const arimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const arimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (arimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            const sarimaxMonthly2023 = base2022Fire.map(v => clamp(Math.round(v * (sarimaxMonthlyCount / 92) + random(-18, 22)), 0, 100));
+            
+            fireMonthlyChart.data.datasets[0].data = base2022Fire;              
+            fireMonthlyChart.data.datasets[1].data = arimaMonthly2023;         
+            fireMonthlyChart.data.datasets[2].data = arimaxMonthly2023;        
+            fireMonthlyChart.data.datasets[3].data = sarimaMonthly2023;        
+            fireMonthlyChart.data.datasets[4].data = sarimaxMonthly2023;       
+            fireMonthlyChart.options.plugins.title.text = `Fire Monthly - ARIMA: ${arima.monthly.toFixed(1)}% | ARIMAX: ${arimax.monthly.toFixed(1)}% | SARIMA: ${sarima.monthly.toFixed(1)}% | SARIMAX: ${sarimax.monthly.toFixed(1)}%`;
+            fireMonthlyChart.update('active');
+        }
+
+        if (fireJulDecChart) {
+            const baseJulDecFire = [28,30,26,22,19,17];
+            const arimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const arimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (arimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaJulDecCount / 75) + random(-20, 25)), 0, 100));
+            const sarimaxJulDec2023 = baseJulDecFire.map(v => clamp(Math.round(v * (sarimaxJulDecCount / 75) + random(-20, 25)), 0, 100));
+            
+            fireJulDecChart.data.datasets[0].data = [null,null,null,null,null,null,...baseJulDecFire];  
+            fireJulDecChart.data.datasets[1].data = [null,null,null,null,null,null,...arimaJulDec2023];
+            fireJulDecChart.data.datasets[2].data = [null,null,null,null,null,null,...arimaxJulDec2023];
+            fireJulDecChart.data.datasets[3].data = [null,null,null,null,null,null,...sarimaJulDec2023];
+            fireJulDecChart.data.datasets[4].data = [null,null,null,null,null,null,...sarimaxJulDec2023];
+            fireJulDecChart.options.plugins.title.text = `Fire Jul-Dec - ARIMA: ${arima.julDec.toFixed(1)}% | ARIMAX: ${arimax.julDec.toFixed(1)}% | SARIMA: ${sarima.julDec.toFixed(1)}% | SARIMAX: ${sarimax.julDec.toFixed(1)}%`;
+            fireJulDecChart.update('active');
+        }
+        document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function initializeCharts() {
+        yearlyPredictionChart = new Chart('yearlyPredictionChart', {
+            type: 'line',
+            data: {
+                labels: ['2020','2021','2022','2023 (Predicted)'],
+                datasets: [{
+                    label: 'Road Accidents',
+                    data: [45,68,92,92],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231,76,60,0.2)',
+                    borderWidth: 7,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: '2023 Full Year Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' } } }
+        });
+
+        monthlyComparisonChart = new Chart('monthlyComparisonChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Actual', data: [28,32,35,30,40,38,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
+                    { label: '2023 Forecast', data: [30,28,33,32,38,40,45,48,43,38,35,32], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: '2023 Monthly Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' } } }
+        });
+
+        julDecChart = new Chart('julDecChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Jul–Dec', data: [null,null,null,null,null,null,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
+                    { label: '2023 Jul–Dec Forecast', data: [null,null,null,null,null,null,45,50,48,42,39,36], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.2)', fill: true }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'July–Dec 2023 Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' } } }
+        });
+
+        fetch('/get_latest_prediction')
+            .then(r => r.json())
+            .then(d => {
+                const pred = d.prediction || "2023 Full Year: 50.0% Risk | 2023 Monthly: 60.0% Risk | July-Dec 2023: 70.0% Risk";
+                const [full, monthly, jul] = pred.split('|').map(s => s.trim());
+                updateRoadCharts({ full_year: full, monthly: monthly, jul_dec: jul });
+            });
+
+        fireYearlyChart = new Chart('fireYearlyChart', {
+            type: 'line',
+            data: {
+                labels: ['2020','2021','2022','2023 (Predicted)'],
+                datasets: [
+                    { label: '2022 Actual', data: [20,35,48,48], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [20,35,48,48], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [20,35,48,48], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - 2023 Full Year Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        fireMonthlyChart = new Chart('fireMonthlyChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Actual', data: [15,18,22,16,25,20,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX 2023 Forecast', data: [16,19,23,17,26,21,29,31,27,23,20,18], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - 2023 Monthly Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        fireJulDecChart = new Chart('fireJulDecChart', {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label: '2022 Jul–Dec Actual', data: [null,null,null,null,null,null,28,30,26,22,19,17], borderColor: '#3498db', fill: false, borderWidth: 4, tension: 0.4 },
+                    { label: 'ARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#1abc9c', backgroundColor: 'rgba(26,188,156,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'ARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMA Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'SARIMAX Jul–Dec 2023', data: [null,null,null,null,null,null,29,32,28,24,21,19], borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)', fill: true, tension: 0.4, borderWidth: 3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1800 }, plugins: { title: { display: true, text: 'Fire - July–Dec 2023 Risk: Loading...', font: { size: 26, weight: 'bold' }, color: '#2c3e50' }, legend: { position: 'top', labels: { font: { size: 14 } } } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        fetch('/get_latest_fire_prediction')
+            .then(r => r.json())
+            .then(d => {
+                let pred = d.prediction || "Fire 2023 Full Year: 50.0% Risk | Fire 2023 Monthly: 60.0% Risk | Fire July-Dec 2023: 70.0% Risk";
+                if (pred.startsWith('{')) {
+                    try {
+                        const jsonPred = JSON.parse(pred);
+                        const full    = jsonPred.sarima?.full_year  || jsonPred.arima?.full_year  || "Fire 2023 Full Year: 50.0% Risk";
+                        const monthly = jsonPred.sarima?.monthly    || jsonPred.arima?.monthly    || "Fire 2023 Monthly: 60.0% Risk";
+                        const julDec  = jsonPred.sarima?.jul_dec    || jsonPred.arima?.jul_dec    || "Fire July-Dec 2023: 70.0% Risk";
+                        updateFireCharts({
+                            fire_full: full,
+                            fire_monthly: monthly,
+                            fire_jul_dec: julDec,
+                            arima_full: jsonPred.arima?.full_year,
+                            arimax_full: jsonPred.arimax?.full_year,
+                            sarima_full: jsonPred.sarima?.full_year,
+                            sarimax_full: jsonPred.sarimax?.full_year,
+                        });
+                        return;
+                    } catch (e) {
+                        console.warn("Failed to parse JSON prediction, falling back to string split", e);
                     }
-                });
+                }
+                const [full, monthly, julDec] = pred.split('|').map(s => s.trim());
+                updateFireCharts({ fire_full: full, fire_monthly: monthly, fire_jul_dec: julDec });
+            })
+            .catch(err => {
+                console.error("Failed to fetch latest fire prediction:", err);
+                updateFireCharts({ fire_full: "Fire 2023 Full Year: 50.0% Risk", fire_monthly: "Fire 2023 Monthly: 60.0% Risk", fire_jul_dec: "Fire July-Dec 2023: 70.0% Risk" });
             });
-            fetch('/load_pnp_expired').then(r => r.json()).then(data => {
-                const container = document.getElementById('recent-alert-container');
-                data.forEach(d => {
-                    const row = document.createElement('tr');
-                    row.className = 'alert-row';
-                    row.innerHTML = `
-                        <td class="status-cell"><span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span></td>
-                        <td class="time-cell">${new Date(d.time).toLocaleTimeString()}</td>
-                        <td class="barangay-cell">${d.barangay}</td>
-                        <td class="type-cell">${d.type}</td>
-                        <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px;" onclick="showImage('${d.image}')" />` : 'No Image'}</td>
-                        <td class="actions-cell"></td>
+    }
+
+    socket.on('update_prediction_charts', updateRoadCharts);
+    socket.on('update_fire_multi_charts', updateFireCharts);
+
+    function setOfficer() {
+        const position = document.getElementById('officerPosition').value;
+        const name = document.getElementById('officerName').value.trim();
+        if (!position || !name) {
+            alert("Please select a position and enter a name.");
+            return;
+        }
+        document.getElementById('officerModal').style.display = 'none';
+        fetch('/save_pnp_officer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ position, name })
+        }).then(() => loadRecentOfficers());
+        const welcomeSpan = document.createElement('div');
+        welcomeSpan.className = 'header-welcome-text';
+        welcomeSpan.innerHTML = `
+            <span class="welcome-word">Welcome</span>
+            <div class="details">
+                <span class="position-text">${position}</span>
+                <span class="name-text">${name}</span>
+            </div>
+        `;
+        const header = document.querySelector('header');
+        if (header) {
+            header.appendChild(welcomeSpan);
+        }
+    }
+
+    function loadRecentOfficers() {
+        fetch('/get_recent_pnp_officers')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('officerList');
+                list.innerHTML = '';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'officer-item';
+                    div.innerHTML = `
+                        <div class="officer-date">${item.date}</div>
+                        <div class="officer-name">${item.name}</div>
                     `;
-                    container.appendChild(row);
+                    list.appendChild(div);
                 });
             });
-        }
+    }
 
-        function moveToRecent(alertId) {
-            if (!liveAlerts.has(alertId)) return;
-            const { element } = liveAlerts.get(alertId);
-            liveAlerts.delete(alertId);
-            
-            element.querySelector('.status-cell').innerHTML = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
-            document.getElementById('recent-alert-container').insertBefore(element, document.getElementById('recent-alert-container').firstChild);
-            
-            fetch('/expire_pnp_alert', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({alert_id: alertId})
-            });
-        }
+    window.addEventListener('load', function() {
+        document.getElementById('officerModal').style.display = 'flex';
+        loadRecentOfficers();
+    });
 
-        // ROAD ACCIDENT CHARTS
-            let yearlyPredictionChart = null;
-            let monthlyComparisonChart = null;
-            let julDecChart = null;
+    initializeCharts();
 
-            // FIRE INCIDENT CHARTS
-            let fireYearlyChart = null;
-            let fireMonthlyChart = null;
-            let fireJulDecChart = null;
+    document.querySelectorAll('.alert-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab + '-alerts-tab').classList.add('active');
+        });
+    });
 
-            function random(min, max) {
-                return Math.random() * (max - min) + min;
-            }
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        sidebar.classList.toggle('active');
+        mainContent.classList.toggle('shifted');
+    }
 
-            function parsePrediction(full, monthly, julDec) {
-                const fullMatch = full.match(/(\d+\.\d+)%/);
-                const monthlyMatch = monthly.match(/(\d+\.\d+)%/);
-                const julDecMatch = julDec.match(/(\d+\.\d+)%/);
-                return {
-                    full: fullMatch ? parseFloat(fullMatch[1]) : 50,
-                    monthly: monthlyMatch ? parseFloat(monthlyMatch[1]) : 60,
-                    julDec: julDecMatch ? parseFloat(julDecMatch[1]) : 70
-                };
-            }
+    document.addEventListener('DOMContentLoaded', () => {
+        const lat = {{ lat_coord|default(14.0549) }};
+        const lon = {{ lon_coord|default(121.3013) }};
+        const mapboxToken = 'pk.eyJ1Ijoia3VtaXRva2lydSIsImEiOiJjbWNvZXpkdDQwNmdvMnNyMnNtNGw5NGI1In0.3Y9z5y4saOL76Eb5c-o0UQ';
+        const tileLayerUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+        const pnpMap = L.map('map').setView([lat, lon], 16);
+        window.pnpMap = pnpMap; // Used to plot markers inside loadStoredAlerts()
 
-            function updateRoadCharts(data) {
-                const fullText = data.full_year || "2023 Full Year: 50.0% Risk";
-                const monthlyText = data.monthly || "2023 Monthly: 60.0% Risk";
-                const julDecText = data.jul_dec || "July-Dec 2023: 70.0% Risk";
+        L.tileLayer(tileLayerUrl, { attribution: '© Mapbox © OpenStreetMap', maxZoom: 18, tileSize: 512, zoomOffset: -1 }).addTo(pnpMap);
+        const socket = io('https://now-alert-o6l9.onrender.com', { transports: ['websocket'] });
+        
+        loadStoredAlerts(); 
 
-                const { full, monthly, julDec } = parsePrediction(fullText, monthlyText, julDecText);
-
-                // Base counts from model
-                let full2023Count = Math.round((full / 100) * 150);
-                let monthly2023Count = Math.round((monthly / 100) * 150);
-                let julDec2023Count = Math.round((julDec / 100) * 90);
-
-                // EXTRA RANDOM VARIATION TO PREVENT "STUCK" FEEL
-                full2023Count += Math.round(random(-12, 15));     // Stronger variation for yearly point
-                monthly2023Count += Math.round(random(-15, 18));
-                julDec2023Count += Math.round(random(-18, 20));
-
-                // Clamp to reasonable range (prevents extreme outliers)
-                full2023Count = Math.max(60, Math.min(190, full2023Count));
-                monthly2023Count = Math.max(70, Math.min(180, monthly2023Count));
-                julDec2023Count = Math.max(50, Math.min(130, julDec2023Count));
-
-                if (yearlyPredictionChart) {
-                    yearlyPredictionChart.data.datasets[0].data[3] = full2023Count;
-                    yearlyPredictionChart.options.plugins.title.text = fullText;
-                    yearlyPredictionChart.update('active');
-                }
-
-                // monthlyComparisonChart - LINES CHANGE SHAPE EVERY TIME
-                if (monthlyComparisonChart) {
-                    const base2022 = [28,32,35,30,40,38,42,45,41,36,33,30];
-                    const monthly2023 = base2022.map(v => {
-                        const ratio = monthly2023Count / 92;
-                        const variation = random(-18, 22);  // Increased range for more movement
-                        return Math.max(0, Math.round(v * ratio + variation));
-                    });
-                    monthlyComparisonChart.data.datasets[1].data = monthly2023;
-                    monthlyComparisonChart.options.plugins.title.text = monthlyText;
-                    monthlyComparisonChart.update('active');
-                }
-
-                // julDecChart - LINES CHANGE SHAPE EVERY TIME
-                if (julDecChart) {
-                    const baseJulDec2022 = [42,45,41,36,33,30];
-                    const forecastJulDec = baseJulDec2022.map(v => {
-                        const ratio = julDec2023Count / 75;
-                        const variation = random(-20, 25);  // Increased range for dramatic change
-                        return Math.max(0, Math.round(v * ratio + variation));
-                    });
-                    julDecChart.data.datasets[1].data = [null,null,null,null,null,null,...forecastJulDec];
-                    julDecChart.options.plugins.title.text = julDecText;
-                    julDecChart.update('active');
-                }
-
-                // Auto-scroll to charts
-                document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
-            }
-
-            function updateFireCharts(data) {
-                // Get base values from broadcast (or fallback) - all four models
-                const arimaFull    = data.arima_full    || "Fire 2023 Full Year (ARIMA): 50.0% Risk";
-                const arimaMonthly = data.arima_monthly || "Fire 2023 Monthly (ARIMA): 60.0% Risk";
-                const arimaJulDec  = data.arima_jul_dec || "Fire July-Dec 2023 (ARIMA): 70.0% Risk";
-
-                const arimaxFull    = data.arimax_full    || "Fire 2023 Full Year (ARIMAX): 50.0% Risk";
-                const arimaxMonthly = data.arimax_monthly || "Fire 2023 Monthly (ARIMAX): 60.0% Risk";
-                const arimaxJulDec  = data.arimax_jul_dec || "Fire July-Dec 2023 (ARIMAX): 70.0% Risk";
-
-                const sarimaFull    = data.sarima_full    || "Fire 2023 Full Year (SARIMA): 50.0% Risk";
-                const sarimaMonthly = data.sarima_monthly || "Fire 2023 Monthly (SARIMA): 60.0% Risk";
-                const sarimaJulDec  = data.sarima_jul_dec || "Fire July-Dec 2023 (SARIMA): 70.0% Risk";
-
-                const sarimaxFull    = data.sarimax_full    || "Fire 2023 Full Year (SARIMAX): 50.0% Risk";
-                const sarimaxMonthly = data.sarimax_monthly || "Fire 2023 Monthly (SARIMAX): 60.0% Risk";
-                const sarimaxJulDec  = data.sarimax_jul_dec || "Fire July-Dec 2023 (SARIMAX): 70.0% Risk";
-
-                // Parse all four models
-                const arima   = parsePrediction(arimaFull,    arimaMonthly,   arimaJulDec);
-                const arimax  = parsePrediction(arimaxFull,   arimaxMonthly,  arimaxJulDec);
-                const sarima  = parsePrediction(sarimaFull,   sarimaMonthly,  sarimaJulDec);
-                const sarimax = parsePrediction(sarimaxFull,  sarimaxMonthly, sarimaxJulDec);
-
-                // Generate **unique random offsets per model per horizon** → ensures % and lines change every time
-                const arimaFullRand    = Math.round(random(-15, 18));
-                const arimaxFullRand   = Math.round(random(-15, 18));
-                const sarimaFullRand   = Math.round(random(-15, 18));
-                const sarimaxFullRand  = Math.round(random(-15, 18));
-
-                const arimaMonthRand   = Math.round(random(-18, 22));
-                const arimaxMonthRand  = Math.round(random(-18, 22));
-                const sarimaMonthRand  = Math.round(random(-18, 22));
-                const sarimaxMonthRand = Math.round(random(-18, 22));
-
-                const arimaJulRand     = Math.round(random(-20, 25));
-                const arimaxJulRand    = Math.round(random(-20, 25));
-                const sarimaJulRand    = Math.round(random(-20, 25));
-                const sarimaxJulRand   = Math.round(random(-20, 25));
-
-                // Base counts + independent random offsets (different every submission)
-                const arimaFullCount    = Math.round((arima.full    / 100) * 150) + arimaFullRand;
-                const arimaxFullCount   = Math.round((arimax.full   / 100) * 150) + arimaxFullRand;
-                const sarimaFullCount   = Math.round((sarima.full   / 100) * 150) + sarimaFullRand;
-                const sarimaxFullCount  = Math.round((sarimax.full  / 100) * 150) + sarimaxFullRand;
-
-                const arimaMonthlyCount  = Math.round((arima.monthly  / 100) * 150) + arimaMonthRand;
-                const arimaxMonthlyCount = Math.round((arimax.monthly / 100) * 150) + arimaxMonthRand;
-                const sarimaMonthlyCount = Math.round((sarima.monthly / 100) * 150) + sarimaMonthRand;
-                const sarimaxMonthlyCount = Math.round((sarimax.monthly/ 100) * 150) + sarimaxMonthRand;
-
-                const arimaJulDecCount   = Math.round((arima.julDec   / 100) * 90) + arimaJulRand;
-                const arimaxJulDecCount  = Math.round((arimax.julDec  / 100) * 90) + arimaxJulRand;
-                const sarimaJulDecCount  = Math.round((sarima.julDec  / 100) * 90) + sarimaJulRand;
-                const sarimaxJulDecCount = Math.round((sarimax.julDec / 100) * 90) + sarimaxJulRand;
-
-                // Clamp to realistic range (no negative or absurd numbers)
-                const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-
-                // ───────────────────────────────────────────────────────────────
-                // fireYearlyChart — FOUR MOVING LINES + FIXED 2022 ACTUAL
-                // ───────────────────────────────────────────────────────────────
-                if (fireYearlyChart) {
-                    fireYearlyChart.data.datasets[0].data[3] = 48;  // FIXED 2022 point (example value - adjust if needed)
-                    fireYearlyChart.data.datasets[1].data[3] = clamp(arimaFullCount,   60, 190);  // ARIMA
-                    fireYearlyChart.data.datasets[2].data[3] = clamp(arimaxFullCount,  60, 190);  // ARIMAX
-                    fireYearlyChart.data.datasets[3].data[3] = clamp(sarimaFullCount,  60, 190);  // SARIMA
-                    fireYearlyChart.data.datasets[4].data[3] = clamp(sarimaxFullCount, 60, 190);  // SARIMAX
-
-                    fireYearlyChart.options.plugins.title.text = 
-                        `Fire Yearly - ARIMA: ${arima.full.toFixed(1)}% | ARIMAX: ${arimax.full.toFixed(1)}% | SARIMA: ${sarima.full.toFixed(1)}% | SARIMAX: ${sarimax.full.toFixed(1)}%`;
-
-                    fireYearlyChart.update('active');
-                }
-
-                // ───────────────────────────────────────────────────────────────
-                // fireMonthlyChart — FOUR MOVING LINES + FIXED 2022 ACTUAL
-                // ───────────────────────────────────────────────────────────────
-                if (fireMonthlyChart) {
-                    const base2022Fire = [15,18,22,16,25,20,28,30,26,22,19,17];
-
-                    const arimaMonthly2023 = base2022Fire.map(v => {
-                        const ratio = arimaMonthlyCount / 92;
-                        const variation = random(-18, 22);  // Strong variation → very visible change
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const arimaxMonthly2023 = base2022Fire.map(v => {
-                        const ratio = arimaxMonthlyCount / 92;
-                        const variation = random(-18, 22);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const sarimaMonthly2023 = base2022Fire.map(v => {
-                        const ratio = sarimaMonthlyCount / 92;
-                        const variation = random(-18, 22);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const sarimaxMonthly2023 = base2022Fire.map(v => {
-                        const ratio = sarimaxMonthlyCount / 92;
-                        const variation = random(-18, 22);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    fireMonthlyChart.data.datasets[0].data = base2022Fire;              // FIXED 2022 line
-                    fireMonthlyChart.data.datasets[1].data = arimaMonthly2023;         // ARIMA moves
-                    fireMonthlyChart.data.datasets[2].data = arimaxMonthly2023;        // ARIMAX moves
-                    fireMonthlyChart.data.datasets[3].data = sarimaMonthly2023;        // SARIMA moves
-                    fireMonthlyChart.data.datasets[4].data = sarimaxMonthly2023;       // SARIMAX moves
-
-                    fireMonthlyChart.options.plugins.title.text = 
-                        `Fire Monthly - ARIMA: ${arima.monthly.toFixed(1)}% | ARIMAX: ${arimax.monthly.toFixed(1)}% | SARIMA: ${sarima.monthly.toFixed(1)}% | SARIMAX: ${sarimax.monthly.toFixed(1)}%`;
-
-                    fireMonthlyChart.update('active');
-                }
-
-                // ───────────────────────────────────────────────────────────────
-                // fireJulDecChart — FOUR MOVING LINES + FIXED 2022 ACTUAL
-                // ───────────────────────────────────────────────────────────────
-                if (fireJulDecChart) {
-                    const baseJulDecFire = [28,30,26,22,19,17];
-
-                    const arimaJulDec2023 = baseJulDecFire.map(v => {
-                        const ratio = arimaJulDecCount / 75;
-                        const variation = random(-20, 25);  // Very strong → dramatic movement every time
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const arimaxJulDec2023 = baseJulDecFire.map(v => {
-                        const ratio = arimaxJulDecCount / 75;
-                        const variation = random(-20, 25);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const sarimaJulDec2023 = baseJulDecFire.map(v => {
-                        const ratio = sarimaJulDecCount / 75;
-                        const variation = random(-20, 25);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    const sarimaxJulDec2023 = baseJulDecFire.map(v => {
-                        const ratio = sarimaxJulDecCount / 75;
-                        const variation = random(-20, 25);
-                        return clamp(Math.round(v * ratio + variation), 0, 100);
-                    });
-
-                    fireJulDecChart.data.datasets[0].data = [null,null,null,null,null,null,...baseJulDecFire];  // FIXED 2022
-                    fireJulDecChart.data.datasets[1].data = [null,null,null,null,null,null,...arimaJulDec2023];
-                    fireJulDecChart.data.datasets[2].data = [null,null,null,null,null,null,...arimaxJulDec2023];
-                    fireJulDecChart.data.datasets[3].data = [null,null,null,null,null,null,...sarimaJulDec2023];
-                    fireJulDecChart.data.datasets[4].data = [null,null,null,null,null,null,...sarimaxJulDec2023];
-
-                    fireJulDecChart.options.plugins.title.text = 
-                        `Fire Jul-Dec - ARIMA: ${arima.julDec.toFixed(1)}% | ARIMAX: ${arimax.julDec.toFixed(1)}% | SARIMA: ${sarima.julDec.toFixed(1)}% | SARIMAX: ${sarimax.julDec.toFixed(1)}%`;
-
-                    fireJulDecChart.update('active');
-                }
-
-                // Auto-scroll to charts
-                document.querySelector('.prediction-charts-grid')?.scrollIntoView({ behavior: 'smooth' });
-            }
-
-            function initializeCharts() {
-                yearlyPredictionChart = new Chart('yearlyPredictionChart', {
-                    type: 'line',
+        const ctx = document.getElementById('alertsPerMonthChart');
+        if (ctx) {
+            const chartCtx = ctx.getContext('2d');
+            if (chartCtx) {
+                let alertsPerMonthChart = new Chart(chartCtx, {
+                    type: 'doughnut',
                     data: {
-                        labels: ['2020','2021','2022','2023 (Predicted)'],
+                        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
                         datasets: [{
-                            label: 'Road Accidents',
-                            data: [45,68,92,92],
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231,76,60,0.2)',
-                            borderWidth: 7,
-                            tension: 0.4,
-                            fill: true
+                            label: 'Alerts Per Month',
+                            data: [
+                                {{ alerts_per_month['January']|default(0) }},
+                                {{ alerts_per_month['February']|default(0) }},
+                                {{ alerts_per_month['March']|default(0) }},
+                                {{ alerts_per_month['April']|default(0) }},
+                                {{ alerts_per_month['May']|default(0) }},
+                                {{ alerts_per_month['June']|default(0) }},
+                                {{ alerts_per_month['July']|default(0) }},
+                                {{ alerts_per_month['August']|default(0) }},
+                                {{ alerts_per_month['September']|default(0) }},
+                                {{ alerts_per_month['October']|default(0) }},
+                                {{ alerts_per_month['November']|default(0) }},
+                                {{ alerts_per_month['December']|default(0) }}
+                            ],
+                            backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                                '#FF6F61', '#6B7280', '#F4A261', '#2A9D8F', '#E76F51', '#D00000'
+                            ],
+                            borderColor: ['#080808ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff'],
+                            borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        animation: { duration: 1800 },
+                        aspectRatio: 1.5,
                         plugins: {
-                            title: {
-                                display: true,
-                                text: '2023 Full Year Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            }
-                        }
-                    }
-                });
-
-                monthlyComparisonChart = new Chart('monthlyComparisonChart', {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                        datasets: [
-                            { label: '2022 Actual', data: [28,32,35,30,40,38,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
-                            { label: '2023 Forecast', data: [30,28,33,32,38,40,45,48,43,38,35,32], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: '2023 Monthly Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            }
-                        }
-                    }
-                });
-
-                julDecChart = new Chart('julDecChart', {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                        datasets: [
-                            { label: '2022 Jul–Dec', data: [null,null,null,null,null,null,42,45,41,36,33,30], borderColor: '#3498db', fill: false },
-                            { label: '2023 Jul–Dec Forecast', data: [null,null,null,null,null,null,45,50,48,42,39,36], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.2)', fill: true }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'July–Dec 2023 Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            }
-                        }
-                    }
-                });
-
-                // Initial load (fallback - can be removed if only SARIMA)
-                fetch('/get_latest_prediction')
-                    .then(r => r.json())
-                    .then(d => {
-                        const pred = d.prediction || "2023 Full Year: 50.0% Risk | 2023 Monthly: 60.0% Risk | July-Dec 2023: 70.0% Risk";
-                        const [full, monthly, jul] = pred.split('|').map(s => s.trim());
-                        updateRoadCharts({ full_year: full, monthly: monthly, jul_dec: jul });
-                    });
-
-                // Fire charts initialization — FOUR LINES PER CHART (ARIMA, ARIMAX, SARIMA, SARIMAX)
-
-                // Fire charts initialization — 2022 ACTUAL LINE + FOUR 2023 FORECAST LINES (ARIMA, ARIMAX, SARIMA, SARIMAX)
-
-                fireYearlyChart = new Chart('fireYearlyChart', {
-                    type: 'line',
-                    data: {
-                        labels: ['2020','2021','2022','2023 (Predicted)'],
-                        datasets: [
-                            { 
-                                label: '2022 Actual', 
-                                data: [20,35,48,48], 
-                                borderColor: '#3498db',          // Blue - 2022 kept fixed
-                                fill: false,
-                                borderWidth: 4,
-                                tension: 0.4
-                            },
-                            { 
-                                label: 'ARIMA 2023 Forecast', 
-                                data: [20,35,48,48], 
-                                borderColor: '#1abc9c',          // Teal
-                                backgroundColor: 'rgba(26,188,156,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'ARIMAX 2023 Forecast', 
-                                data: [20,35,48,48], 
-                                borderColor: '#e67e22',          // Orange
-                                backgroundColor: 'rgba(230,126,34,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMA 2023 Forecast', 
-                                data: [20,35,48,48], 
-                                borderColor: '#27ae60',          // Green
-                                backgroundColor: 'rgba(39,174,96,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMAX 2023 Forecast', 
-                                data: [20,35,48,48], 
-                                borderColor: '#9b59b6',          // Purple
-                                backgroundColor: 'rgba(155,89,182,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 1800 },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Fire - 2023 Full Year Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            },
                             legend: {
-                                position: 'top',
-                                labels: { font: { size: 14 } }
+                                display: false,
+                                position: 'bottom',
+                                labels: {
+                                    color: '#000000',
+                                    font: { size: 17 },
+                                    generateLabels: function(chart) {
+                                        const labels = chart.data.labels;
+                                        return labels.map((label, index) => ({
+                                            text: label,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[index],
+                                            strokeStyle: chart.data.datasets[0].borderColor[index],
+                                            lineWidth: chart.data.datasets[0].borderWidth,
+                                            hidden: false,
+                                            index: index,
+                                            datasetIndex: 0
+                                        }));
+                                    },
+                                    boxWidth: 20,
+                                    padding: 10,
+                                    usePointStyle: true
+                                },
+                                onClick: function(e, legendItem, legend) {
+                                    const index = legendItem.index;
+                                    const ci = legend.chart;
+                                    const meta = ci.getDatasetMeta(0);
+                                    meta.data[index].hidden = !meta.data[index].hidden;
+                                    ci.update();
+                                }
                             }
                         },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
+                        layout: { padding: { bottom: 20 } }
                     }
                 });
+                const twoRowLegendPlugin = {
+                    id: 'twoRowLegend',
+                    afterUpdate(chart) {
+                        const legend = chart.options.plugins.legend;
+                        if (legend && legend.position === 'bottom') {
+                            const legendElement = document.querySelector(`#${chart.canvas.id}-legend`);
+                            if (!legendElement) {
+                                const container = document.createElement('div');
+                                container.id = `${chart.canvas.id}-legend`;
+                                container.className = 'chart-legend-two-rows';
+                                chart.canvas.parentNode.appendChild(container);
 
-                fireMonthlyChart = new Chart('fireMonthlyChart', {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                        datasets: [
-                            { 
-                                label: '2022 Actual', 
-                                data: [15,18,22,16,25,20,28,30,26,22,19,17], 
-                                borderColor: '#3498db',          // Blue - 2022 kept fixed
-                                fill: false,
-                                borderWidth: 4,
-                                tension: 0.4
-                            },
-                            { 
-                                label: 'ARIMA 2023 Forecast', 
-                                data: [16,19,23,17,26,21,29,31,27,23,20,18], 
-                                borderColor: '#1abc9c',          // Teal
-                                backgroundColor: 'rgba(26,188,156,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'ARIMAX 2023 Forecast', 
-                                data: [16,19,23,17,26,21,29,31,27,23,20,18], 
-                                borderColor: '#e67e22',          // Orange
-                                backgroundColor: 'rgba(230,126,34,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMA 2023 Forecast', 
-                                data: [16,19,23,17,26,21,29,31,27,23,20,18], 
-                                borderColor: '#27ae60',          // Green
-                                backgroundColor: 'rgba(39,174,96,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMAX 2023 Forecast', 
-                                data: [16,19,23,17,26,21,29,31,27,23,20,18], 
-                                borderColor: '#9b59b6',          // Purple
-                                backgroundColor: 'rgba(155,89,182,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 1800 },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Fire - 2023 Monthly Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            },
-                            legend: {
-                                position: 'top',
-                                labels: { font: { size: 14 } }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
+                                const labels = chart.data.labels;
+                                const firstRow = labels.slice(0, 6);
+                                const secondRow = labels.slice(6, 12);
 
-                fireJulDecChart = new Chart('fireJulDecChart', {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                        datasets: [
-                            { 
-                                label: '2022 Jul–Dec Actual', 
-                                data: [null,null,null,null,null,null,28,30,26,22,19,17], 
-                                borderColor: '#3498db',          // Blue - 2022 kept fixed
-                                fill: false,
-                                borderWidth: 4,
-                                tension: 0.4
-                            },
-                            { 
-                                label: 'ARIMA Jul–Dec 2023', 
-                                data: [null,null,null,null,null,null,29,32,28,24,21,19], 
-                                borderColor: '#1abc9c',          // Teal
-                                backgroundColor: 'rgba(26,188,156,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'ARIMAX Jul–Dec 2023', 
-                                data: [null,null,null,null,null,null,29,32,28,24,21,19], 
-                                borderColor: '#e67e22',          // Orange
-                                backgroundColor: 'rgba(230,126,34,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMA Jul–Dec 2023', 
-                                data: [null,null,null,null,null,null,29,32,28,24,21,19], 
-                                borderColor: '#27ae60',          // Green
-                                backgroundColor: 'rgba(39,174,96,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            },
-                            { 
-                                label: 'SARIMAX Jul–Dec 2023', 
-                                data: [null,null,null,null,null,null,29,32,28,24,21,19], 
-                                borderColor: '#9b59b6',          // Purple
-                                backgroundColor: 'rgba(155,89,182,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 1800 },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Fire - July–Dec 2023 Risk: Loading...',
-                                font: { size: 26, weight: 'bold' },
-                                color: '#2c3e50'
-                            },
-                            legend: {
-                                position: 'top',
-                                labels: { font: { size: 14 } }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
+                                [firstRow, secondRow].forEach((row, rowIndex) => {
+                                    const rowDiv = document.createElement('div');
+                                    rowDiv.style.display = 'flex';
+                                    rowDiv.style.justifyContent = 'center';
+                                    rowDiv.style.marginBottom = rowIndex === 0 ? '10px' : '20px';
+                                    rowDiv.style.gap = '15px';
 
+                                    row.forEach((label, index) => {
+                                        const actualIndex = rowIndex * 6 + index;
+                                        const item = document.createElement('div');
+                                        item.className = 'chart-legend-item';
+                                        item.innerHTML = `
+                                            <span style="display: inline-block; width: 20px; height: 20px; background-color: ${chart.data.datasets[0].backgroundColor[actualIndex]}; margin-right: 5px; vertical-align: middle;"></span>
+                                            <span style="color: #000000; font-size: 17px;">${label}</span>
+                                        `;
+                                        item.onclick = () => {
+                                            const meta = chart.getDatasetMeta(0);
+                                            meta.data[actualIndex].hidden = !meta.data[actualIndex].hidden;
+                                            chart.update();
+                                        };
+                                        rowDiv.appendChild(item);
+                                    });
 
-                // Initial load from Fire prediction
-                fetch('/get_latest_fire_prediction')
-                    .then(r => r.json())
-                    .then(d => {
-                        let pred = d.prediction || "Fire 2023 Full Year: 50.0% Risk | Fire 2023 Monthly: 60.0% Risk | Fire July-Dec 2023: 70.0% Risk";
-
-                        // If it's JSON format (from multi-model save), parse it properly
-                        if (pred.startsWith('{')) {
-                            try {
-                                const jsonPred = JSON.parse(pred);
-                                // Use SARIMA as primary (since you switched), but can show others in title later
-                                const full    = jsonPred.sarima?.full_year  || jsonPred.arima?.full_year  || "Fire 2023 Full Year: 50.0% Risk";
-                                const monthly = jsonPred.sarima?.monthly    || jsonPred.arima?.monthly    || "Fire 2023 Monthly: 60.0% Risk";
-                                const julDec  = jsonPred.sarima?.jul_dec    || jsonPred.arima?.jul_dec    || "Fire July-Dec 2023: 70.0% Risk";
-
-                                updateFireCharts({ 
-                                    fire_full: full, 
-                                    fire_monthly: monthly, 
-                                    fire_jul_dec: julDec,
-                                    // Optional: pass all for title if you want to show multi-model
-                                    arima_full: jsonPred.arima?.full_year,
-                                    arimax_full: jsonPred.arimax?.full_year,
-                                    sarima_full: jsonPred.sarima?.full_year,
-                                    sarimax_full: jsonPred.sarimax?.full_year,
-                                    // ... add monthly/jul_dec if needed
+                                    container.appendChild(rowDiv);
                                 });
-                                return;
-                            } catch (e) {
-                                console.warn("Failed to parse JSON prediction, falling back to string split", e);
                             }
                         }
-
-                        // Fallback: old string format
-                        const [full, monthly, julDec] = pred.split('|').map(s => s.trim());
-                        updateFireCharts({ 
-                            fire_full: full, 
-                            fire_monthly: monthly, 
-                            fire_jul_dec: julDec 
-                        });
-                    })
-                    .catch(err => {
-                        console.error("Failed to fetch latest fire prediction:", err);
-                        // Fallback to defaults if fetch fails
-                        updateFireCharts({ 
-                            fire_full: "Fire 2023 Full Year: 50.0% Risk",
-                            fire_monthly: "Fire 2023 Monthly: 60.0% Risk",
-                            fire_jul_dec: "Fire July-Dec 2023: 70.0% Risk"
-                        });
-                    });
+                    }
+                };
+                Chart.register(twoRowLegendPlugin);
+                socket.on('update_alerts_per_month', (data) => {
+                    alertsPerMonthChart.data.datasets[0].data = [
+                        data['January'] || 0, data['February'] || 0, data['March'] || 0, data['April'] || 0,
+                        data['May'] || 0, data['June'] || 0, data['July'] || 0, data['August'] || 0,
+                        data['September'] || 0, data['October'] || 0, data['November'] || 0, data['December'] || 0
+                    ];
+                    alertsPerMonthChart.update();
+                });
             }
-
-                
-            socket.on('update_prediction_charts', updateRoadCharts);
-        
-            socket.on('update_fire_multi_charts', updateFireCharts);
-
-            
-            function setOfficer() {
-                const position = document.getElementById('officerPosition').value;
-                const name = document.getElementById('officerName').value.trim();
-                if (!position || !name) {
-                    alert("Please select a position and enter a name.");
-                    return;
-                }
-                document.getElementById('officerModal').style.display = 'none';
-
-                // Save to DB
-                fetch('/save_officer', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ position, name })
-                }).then(() => loadRecentOfficers());
-
-                // Create Structured Welcome Display
-                const welcomeSpan = document.createElement('div');
-                welcomeSpan.className = 'header-welcome-text';
-                welcomeSpan.innerHTML = `
-                    <span class="welcome-word">Welcome</span>
-                    <div class="details">
-                        <span class="position-text">${position}</span>
-                        <span class="name-text">${name}</span>
-                    </div>
-                `;
-
-                // Append to Header
-                const header = document.querySelector('header');
-                if (header) {
-                    header.appendChild(welcomeSpan);
-                }
-            }
-
-            function loadRecentOfficers() {
-                fetch('/get_recent_pnp_officers')
-                    .then(r => r.json())
-                    .then(data => {
-                        const list = document.getElementById('officerList');
-                        list.innerHTML = '';
-                        data.forEach(item => {
-                            const div = document.createElement('div');
-                            div.className = 'officer-item';
-                            div.innerHTML = `
-                                <div class="officer-date">${item.date}</div>
-                                <div class="officer-name">${item.name}</div>
-                            `;
-                            list.appendChild(div);
-                        });
-                    });
-            }
-
-            window.addEventListener('load', function() {
-                document.getElementById('officerModal').style.display = 'flex';
-                loadRecentOfficers();
-            });
-
-            initializeCharts();
-
-        
-
-        const liveAlerts = new Map();
-        const recentAlerts = new Map();
-        const alertElements = new Map();
-
-        function moveToRecent(alertId) {
-            if (!liveAlerts.has(alertId)) return;
-            const { element } = liveAlerts.get(alertId);
-            liveAlerts.delete(alertId);
-            recentAlerts.set(alertId, { element, timestamp: Date.now() });
-
-            const statusDiv = element.querySelector('.alert-status');
-            statusDiv.textContent = 'EXPIRED ALERT';
-            statusDiv.className = 'alert-status status-expired';
-
-            document.getElementById('recent-alert-container')
-                    .insertBefore(element, document.getElementById('recent-alert-container').firstChild);
         }
 
-        document.querySelectorAll('.alert-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(tab.dataset.tab + '-alerts-tab').classList.add('active');
-            });
+        socket.on('connect', () => {
+            socket.emit('register_role', { role: 'pnp', municipality: '{{ municipality }}'.toLowerCase() });
         });
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('active');
-            mainContent.classList.toggle('shifted');
-        }
+        socket.on('pnp_redirect_alert', (data) => {
+            updateUIWithAlert(data);
+            notifyAlert(data);
+        });
 
-        document.addEventListener('DOMContentLoaded', () => {
-
-            loadStoredAlerts();
-
-            const lat = {{ lat_coord|default(14.0549) }};
-            const lon = {{ lon_coord|default(121.3013) }};
-            const mapboxToken = 'pk.eyJ1Ijoia3VtaXRva2lydSIsImEiOiJjbWNvZXpkdDQwNmdvMnNyMnNtNGw5NGI1In0.3Y9z5y4saOL76Eb5c-o0UQ';
-            const tileLayerUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
-
-            const pnpMap = L.map('map').setView([lat, lon], 16);
-            L.tileLayer(tileLayerUrl, { attribution: '© Mapbox © OpenStreetMap', maxZoom: 18, tileSize: 512, zoomOffset: -1 }).addTo(pnpMap);
-
-            const socket = io('https://now-alert-o6l9.onrender.com', { transports: ['websocket'] });
-
-            // Chart setup (your full code preserved)
-            const ctx = document.getElementById('alertsPerMonthChart');
-            if (!ctx) {
-                console.error('Canvas element #alertsPerMonthChart not found');
-            } else {
-                const chartCtx = ctx.getContext('2d');
-                if (!chartCtx) {
-                    console.error('Failed to get 2D context for #alertsPerMonthChart');
-                } else {
-                    let alertsPerMonthChart = new Chart(chartCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                            datasets: [{
-                                label: 'Alerts Per Month',
-                                data: [
-                                    {{ alerts_per_month['January']|default(0) }},
-                                    {{ alerts_per_month['February']|default(0) }},
-                                    {{ alerts_per_month['March']|default(0) }},
-                                    {{ alerts_per_month['April']|default(0) }},
-                                    {{ alerts_per_month['May']|default(0) }},
-                                    {{ alerts_per_month['June']|default(0) }},
-                                    {{ alerts_per_month['July']|default(0) }},
-                                    {{ alerts_per_month['August']|default(0) }},
-                                    {{ alerts_per_month['September']|default(0) }},
-                                    {{ alerts_per_month['October']|default(0) }},
-                                    {{ alerts_per_month['November']|default(0) }},
-                                    {{ alerts_per_month['December']|default(0) }}
-                                ],
-                                backgroundColor: [
-                                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
-                                    '#FF6F61', '#6B7280', '#F4A261', '#2A9D8F', '#E76F51', '#D00000'
-                                ],
-                                borderColor: ['#080808ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff', '#000000ff'],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            aspectRatio: 1.5,
-                            plugins: {
-                                legend: {
-                                    display: false, // Removed vertical legend display
-                                    position: 'bottom',
-                                    labels: {
-                                        color: '#000000',
-                                        font: { size: 17 },
-                                        generateLabels: function(chart) {
-                                            const labels = chart.data.labels;
-                                            return labels.map((label, index) => ({
-                                                text: label,
-                                                fillStyle: chart.data.datasets[0].backgroundColor[index],
-                                                strokeStyle: chart.data.datasets[0].borderColor[index],
-                                                lineWidth: chart.data.datasets[0].borderWidth,
-                                                hidden: false,
-                                                index: index,
-                                                datasetIndex: 0
-                                            }));
-                                        },
-                                        boxWidth: 20,
-                                        padding: 10,
-                                        usePointStyle: true
-                                    },
-                                    onClick: function(e, legendItem, legend) {
-                                        const index = legendItem.index;
-                                        const ci = legend.chart;
-                                        const meta = ci.getDatasetMeta(0);
-                                        meta.data[index].hidden = !meta.data[index].hidden;
-                                        ci.update();
-                                    }
-                                },
-                                layout: {
-                                    padding: {
-                                        bottom: 20
-                                    }
-                                }
-                            }
-                        }
-                    });
-
-                    const twoRowLegendPlugin = {
-                        id: 'twoRowLegend',
-                        afterUpdate(chart) {
-                            const legend = chart.options.plugins.legend;
-                            if (legend && legend.position === 'bottom') {
-                                const legendElement = document.querySelector(`#${chart.canvas.id}-legend`);
-                                if (!legendElement) {
-                                    const container = document.createElement('div');
-                                    container.id = `${chart.canvas.id}-legend`;
-                                    container.className = 'chart-legend-two-rows';
-                                    chart.canvas.parentNode.appendChild(container);
-                                    
-                                    const labels = chart.data.labels;
-                                    const firstRow = labels.slice(0, 6); // January to June
-                                    const secondRow = labels.slice(6, 12); // July to December
-                                    
-                                    [firstRow, secondRow].forEach((row, rowIndex) => {
-                                        const rowDiv = document.createElement('div');
-                                        rowDiv.style.display = 'flex';
-                                        rowDiv.style.justifyContent = 'center';
-                                        rowDiv.style.marginBottom = rowIndex === 0 ? '10px' : '20px';
-                                        rowDiv.style.gap = '15px'; 
-                                        
-                                        row.forEach((label, index) => {
-                                            const actualIndex = rowIndex * 6 + index;
-                                            const item = document.createElement('div');
-                                            item.className = 'chart-legend-item';
-                                            item.innerHTML = `
-                                                <span style="display: inline-block; width: 20px; height: 20px; background-color: ${chart.data.datasets[0].backgroundColor[actualIndex]}; margin-right: 5px; vertical-align: middle;"></span>
-                                                <span style="color: #000000; font-size: 17px;">${label}</span>
-                                            `;
-                                            item.onclick = () => {
-                                                const meta = chart.getDatasetMeta(0);
-                                                meta.data[actualIndex].hidden = !meta.data[actualIndex].hidden;
-                                                chart.update();
-                                            };
-                                            rowDiv.appendChild(item);
-                                        });
-                                        
-                                        container.appendChild(rowDiv);
-                                    });
-                                }
-                            }
-                        }
-                    };
-
-                    Chart.register(twoRowLegendPlugin);
-
-                    // Fallback if data is empty
-                    if (alertsPerMonthChart.data.datasets[0].data.every(value => value === 0)) {
-                        console.warn('Chart initialized with zero data. Check database or server logs.');
-                    }
-
-                    socket.on('update_alerts_per_month', (data) => {
-                        console.log('Received update_alerts_per_month:', data);
-                        alertsPerMonthChart.data.datasets[0].data = [
-                            data['January'] || 0,
-                            data['February'] || 0,
-                            data['March'] || 0,
-                            data['April'] || 0,
-                            data['May'] || 0,
-                            data['June'] || 0,
-                            data['July'] || 0,
-                            data['August'] || 0,
-                            data['September'] || 0,
-                            data['October'] || 0,
-                            data['November'] || 0,
-                            data['December'] || 0
-                        ];
-                        alertsPerMonthChart.update();
-                    });
-                }
-            }
-
-            socket.on('connect', () => {
-                socket.emit('register_role', { role: 'pnp', municipality: '{{ municipality }}'.toLowerCase() });
-            });
-
-            socket.on('pnp_redirect_alert', (data) => {
-                console.log('PNP redirect alert received:', data);
+        socket.on('redirected_alert', (data) => {
+            if (data.target_role === 'pnp') {
                 updateUIWithAlert(data);
                 notifyAlert(data);
-            });
+            }
+        });
 
-            socket.on('redirected_alert', (data) => {
-                if (data.target_role === 'pnp') {
-                    console.log('Direct PNP alert received:', data);
-                    updateUIWithAlert(data);
-                    notifyAlert(data);
-                }
-            });
+        socket.on('update_map', (data) => {
+            const updateLat = data.lat || lat;
+            const updateLon = data.lon || lon;
+            if (window.activeMarkers[data.alert_id]) {
+                pnpMap.removeLayer(window.activeMarkers[data.alert_id]);
+            }
+            const marker = L.marker([updateLat, updateLon]).addTo(pnpMap)
+                .bindPopup(`${data.emergency_type} at ${data.barangay}`)
+                .openPopup();
+            window.activeMarkers[data.alert_id] = marker;
+            pnpMap.setView([updateLat, updateLon], 15);
+            document.getElementById('map-coordinates').textContent = `${updateLat}, ${updateLon}`;
+        });
 
-            socket.on('update_map', (data) => {
-                const lat = data.lat || {{ lat_coord|default(14.0549) }};
-                const lon = data.lon || {{ lon_coord|default(121.3013) }};
+        let totalIncidents = 0;
+        function updateTotalIncidents() {
+            const counterElement = document.getElementById('total-incidents');
+            if (counterElement) {
+                totalIncidents += 1;
+                counterElement.textContent = totalIncidents;
+            }
+        }
 
-                if (window.activeMarkers[data.alert_id]) {
-                    pnpMap.removeLayer(window.activeMarkers[data.alert_id]);
-                }
-                const marker = L.marker([lat, lon]).addTo(pnpMap)
-                    .bindPopup(`${data.emergency_type} at ${data.barangay}`)
-                    .openPopup();
-                window.activeMarkers[data.alert_id] = marker;
-                pnpMap.setView([lat, lon], 15);
-                document.getElementById('map-coordinates').textContent = `${lat}, ${lon}`;
-            });
+        // THIS IS THE EXACT UI CODE REQUESTED
+        function updateUIWithAlert(data) {
+            const isLive = data.expired !== true;
+            const container = isLive
+                ? document.getElementById('live-alert-container')
+                : document.getElementById('recent-alert-container');
+            
+            if (alertElements.has(data.alert_id)) return;
+            
+            const alertItem = document.createElement('tr');
+            alertItem.className = 'alert-row';
+            alertItem.id = `alert-${data.alert_id}`;
 
-            let totalIncidents = 0;
+            alertItem.innerHTML = `
+                <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
+                <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
+                <td class="barangay-cell">${data.barangay}</td>
+                <td class="type-cell">${data.emergency_type || data.type || 'Road Accident'}</td>
+                <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
+                <td class="actions-cell"></td>
+            `;
 
-            function updateTotalIncidents() {
-                const counterElement = document.getElementById('total-incidents');
-                if (counterElement) {
-                    totalIncidents += 1;
-                    counterElement.textContent = totalIncidents;
-                }
+            const actionsCell = alertItem.querySelector('.actions-cell');
+            
+            // SHOW RESPONSE FORM DIRECTLY (Combined Dropdowns)
+            if (isLive) {
+                showResponseForm(actionsCell, data, data.emergency_type || data.type || 'Road Accident');
             }
 
-            function updateUIWithAlert(data) {
-                const isLive = data.expired !== true;
-                const container = isLive
-                    ? document.getElementById('live-alert-container')
-                    : document.getElementById('recent-alert-container');
-                
-                const alertItem = document.createElement('tr');
-                alertItem.className = 'alert-row';
-                alertItem.id = `alert-${data.alert_id}`;
+            alertElements.set(data.alert_id, alertItem);
+            container.appendChild(alertItem);
+            alertItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            updateTotalIncidents();
 
-                alertItem.innerHTML = `
-                    <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                    <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
-                    <td class="barangay-cell">${data.barangay}</td>
-                    <td class="type-cell">${data.type || data.emergency_type || 'Crime Incident'}</td>
-                    <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
-                    <td class="actions-cell"></td>
-                `;
-
-                const actionsCell = alertItem.querySelector('.actions-cell');
-                showResponseForm(actionsCell, data);
-
-                alertElements.set(data.alert_id, alertItem);
-                container.appendChild(alertItem);
-                
-                updateTotalIncidents();
-                alertItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                if (data.lat && data.lon && window.pnpMap) {
-                    L.marker([data.lat, data.lon]).addTo(window.pnpMap);
-                }
-
-                if (isLive) {
-                    setTimeout(() => {
-                        moveToRecent(data.alert_id);
-                    }, 30000);
-                }
+            if (isLive) {
+                liveAlerts.set(data.alert_id, { element: alertItem, data: data });
             }
+        }
 
-            function showResponseForm(container, data, emergencyType) {
-                container.innerHTML = '';
-                const form = document.createElement('div');
-                form.className = 'response-form-inline';
-                form.style.display = 'flex';
-                form.style.flexWrap = 'wrap';
-                form.style.gap = '5px';
+        function showResponseForm(container, data, emergencyType) {
+            container.innerHTML = '';
+            const form = document.createElement('div');
+            form.className = 'response-form-inline';
+            form.style.display = 'flex';
+            form.style.flexWrap = 'wrap';
+            form.style.gap = '5px';
+            if (emergencyType === 'Road Accident') {
+                const causeTypeSelect = document.createElement('select');
+                causeTypeSelect.className = 'dropdown-emergency';
+                causeTypeSelect.name = 'combined_cause_type';
+                const ctPlaceholder = document.createElement('option');
+                ctPlaceholder.text = 'Road Accident Cause and Type';
+                ctPlaceholder.disabled = true;
+                ctPlaceholder.selected = true;
+                causeTypeSelect.appendChild(ctPlaceholder);
 
-                if (emergencyType === 'Road Accident') {
-                    // Combined Cause & Type
-                    const causeTypeSelect = document.createElement('select');
-                    causeTypeSelect.className = 'dropdown-emergency';
-                    causeTypeSelect.name = 'combined_cause_type';
-                    const ctPlaceholder = document.createElement('option');
-                    ctPlaceholder.text = 'Road Accident Cause and Type';
-                    ctPlaceholder.disabled = true;
-                    ctPlaceholder.selected = true;
-                    causeTypeSelect.appendChild(ctPlaceholder);
-                    
-                    menuData['Road Accident']['Combined Cause and Type'].forEach(opt => {
+                menuData['Road Accident']['Combined Cause and Type'].forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.text = opt;
+                    causeTypeSelect.appendChild(option);
+                });
+                form.appendChild(causeTypeSelect);
+                const weatherRoadSelect = document.createElement('select');
+                weatherRoadSelect.className = 'dropdown-emergency';
+                weatherRoadSelect.name = 'combined_weather_road';
+                const wrPlaceholder = document.createElement('option');
+                wrPlaceholder.text = 'Weather and Road Conditions';
+                wrPlaceholder.disabled = true;
+                wrPlaceholder.selected = true;
+                weatherRoadSelect.appendChild(wrPlaceholder);
+                menuData['Road Accident']['Combined Weather and Road'].forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.text = opt;
+                    weatherRoadSelect.appendChild(option);
+                });
+                form.appendChild(weatherRoadSelect);
+                ['Vehicle Types', 'Driver Ages', 'Driver Gender'].forEach(field => {
+                    const select = document.createElement('select');
+                    select.className = 'dropdown-emergency';
+                    select.name = field.toLowerCase().replace(/\s+/g, '_');
+                    const placeholder = document.createElement('option');
+                    placeholder.text = field;
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    select.appendChild(placeholder);
+                    menuData['Road Accident'][field].forEach(opt => {
                         const option = document.createElement('option');
                         option.value = opt;
                         option.text = opt;
-                        causeTypeSelect.appendChild(option);
+                        select.appendChild(option);
                     });
-                    form.appendChild(causeTypeSelect);
-
-                    // Combined Weather & Road
-                    const weatherRoadSelect = document.createElement('select');
-                    weatherRoadSelect.className = 'dropdown-emergency';
-                    weatherRoadSelect.name = 'combined_weather_road';
-                    const wrPlaceholder = document.createElement('option');
-                    wrPlaceholder.text = 'Weather and Road Conditions';
-                    wrPlaceholder.disabled = true;
-                    wrPlaceholder.selected = true;
-                    weatherRoadSelect.appendChild(wrPlaceholder);
-
-                    menuData['Road Accident']['Combined Weather and Road'].forEach(opt => {
+                    form.appendChild(select);
+                });
+            } else if (emergencyType === 'Fire Incident') {
+                Object.keys(menuData['Fire Incident']).forEach(key => {
+                    const select = document.createElement('select');
+                    select.className = 'dropdown-emergency';
+                    select.name = key.toLowerCase().replace(/\s+/g, '_');
+                    const placeholder = document.createElement('option');
+                    placeholder.text = key;
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    select.appendChild(placeholder);
+                    let options = menuData['Fire Incident'][key];
+                    if (!Array.isArray(options)) options = Object.keys(options);
+                    options.forEach(opt => {
                         const option = document.createElement('option');
                         option.value = opt;
                         option.text = opt;
-                        weatherRoadSelect.appendChild(option);
+                        select.appendChild(option);
                     });
-                    form.appendChild(weatherRoadSelect);
-
-                    // Other Fields
-                    ['Vehicle Types', 'Driver Ages', 'Driver Gender'].forEach(field => {
-                        const select = document.createElement('select');
-                        select.className = 'dropdown-emergency';
-                        select.name = field.toLowerCase().replace(/\s+/g, '_');
-                        const placeholder = document.createElement('option');
-                        placeholder.text = field;
-                        placeholder.disabled = true;
-                        placeholder.selected = true;
-                        select.appendChild(placeholder);
-                        menuData['Road Accident'][field].forEach(opt => {
-                            const option = document.createElement('option');
-                            option.value = opt;
-                            option.text = opt;
-                            select.appendChild(option);
-                        });
-                        form.appendChild(select);
+                    form.appendChild(select);
+                });
+            } else if (emergencyType === 'Crime Incident') {
+                Object.keys(menuData['Crime Incident']).forEach(key => {
+                    const select = document.createElement('select');
+                    select.className = 'dropdown-emergency';
+                    select.name = key.toLowerCase().replace(/\s+/g, '_');
+                    const placeholder = document.createElement('option');
+                    placeholder.text = key;
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    select.appendChild(placeholder);
+                    menuData['Crime Incident'][key].forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt;
+                        option.text = opt;
+                        select.appendChild(option);
                     });
+                    form.appendChild(select);
+                });
+            }
+            
+            const submitBtn = document.createElement('button');
+            submitBtn.textContent = 'Submit';
+            submitBtn.className = 'alert-button alert-button-submit';
 
-                } else if (emergencyType === 'Fire Incident') {
-                    // Keep Fire Incident Dropdowns as is
-                    Object.keys(menuData['Fire Incident']).forEach(key => {
-                        const select = document.createElement('select');
-                        select.className = 'dropdown-emergency';
-                        select.name = key.toLowerCase().replace(/\s+/g, '_');
-                        const placeholder = document.createElement('option');
-                        placeholder.text = key;
-                        placeholder.disabled = true;
-                        placeholder.selected = true;
-                        select.appendChild(placeholder);
-                        let options = menuData['Fire Incident'][key];
-                        if (!Array.isArray(options)) options = Object.keys(options);
-                        options.forEach(opt => {
-                            const option = document.createElement('option');
-                            option.value = opt;
-                            option.text = opt;
-                            select.appendChild(option);
-                        });
-                        form.appendChild(select);
-                    });
-
-                } else if (emergencyType === 'Crime Incident') {
-                    // Keep Crime Incident Dropdowns as is
-                    Object.keys(menuData['Crime Incident']).forEach(key => {
-                        const select = document.createElement('select');
-                        select.className = 'dropdown-emergency';
-                        select.name = key.toLowerCase().replace(/\s+/g, '_');
-                        const placeholder = document.createElement('option');
-                        placeholder.text = key;
-                        placeholder.disabled = true;
-                        placeholder.selected = true;
-                        select.appendChild(placeholder);
-                        menuData['Crime Incident'][key].forEach(opt => {
-                            const option = document.createElement('option');
-                            option.value = opt;
-                            option.text = opt;
-                            select.appendChild(option);
-                        });
-                        form.appendChild(select);
-                    });
-                }
-
-                const submitBtn = document.createElement('button');
-                submitBtn.textContent = 'Submit';
-                submitBtn.className = 'alert-button alert-button-submit';
-                
-                submitBtn.onclick = () => {
-                    const formData = {
-                        alert_id: data.alert_id,
-                        role: 'pnp',
-                        lat: data.lat,
-                        lon: data.lon,
-                        barangay: data.barangay,
-                        emergency_type: emergencyType,
-                        municipality: '{{ municipality }}'.toLowerCase()
-                    };
-
-                    if (emergencyType === 'Road Accident') {
-                        const combinedCT = form.querySelector('select[name="combined_cause_type"]').value;
-                        const combinedWR = form.querySelector('select[name="combined_weather_road"]').value;
-
-                        if (combinedCT) {
-                            const [cause, type] = combinedCT.split(', ');
-                            formData['road_accident_cause'] = cause;
-                            formData['road_accident_type'] = type;
-                        }
-                        if (combinedWR) {
-                            const [weather, road] = combinedWR.split(', ');
-                            formData['weather'] = weather;
-                            formData['road_condition'] = road;
-                        }
-                    }
-
-                    form.querySelectorAll('select').forEach(s => {
-                        if (s.name !== 'combined_cause_type' && s.name !== 'combined_weather_road') {
-                            formData[s.name] = s.value;
-                        }
-                    });
-
-                    if (emergencyType === 'Road Accident') socket.emit('pnp_response', formData);
-                    else if (emergencyType === 'Fire Incident') socket.emit('pnp_fire_submitted', formData);
-                    else if (emergencyType === 'Crime Incident') socket.emit('pnp_crime_submitted', formData);
-
-                    container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
-                    const row = container.closest('tr');
-                    if(row) {
-                        row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
-                        
-                        const predictionSpan = document.createElement('div');
-                        predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
-                        predictionSpan.className = 'prediction-text';
-                        predictionSpan.style.fontSize = '12px';
-                        predictionSpan.style.color = 'black';
-                        container.appendChild(predictionSpan);
-                    }
-
-                    if(alertTimers.has(data.alert_id)) {
-                        clearTimeout(alertTimers.get(data.alert_id));
-                        alertTimers.delete(data.alert_id);
-                    }
-
-                    // Remove from Live database so it doesn't reappear on refresh
-                    fetch('/remove_cdrrmo_alert', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({alert_id: data.alert_id})
-                    });
-                    
-                    // Remove from UI
-                    const timer = setTimeout(() => moveToRecent(data.alert_id), 30000); // 30s
-                    liveAlerts.set(data.alert_id, { element: alertItem, timer });
-                    if (alertItem) alertItem.remove();
+            submitBtn.onclick = () => {
+                const formData = {
+                    alert_id: data.alert_id,
+                    role: 'pnp',
+                    lat: data.lat,
+                    lon: data.lon,
+                    barangay: data.barangay,
+                    emergency_type: emergencyType,
+                    municipality: '{{ municipality }}'.toLowerCase()
                 };
-                form.appendChild(submitBtn);
-                container.appendChild(form);
-
+                if (emergencyType === 'Road Accident') {
+                    const combinedCT = form.querySelector('select[name="combined_cause_type"]').value;
+                    const combinedWR = form.querySelector('select[name="combined_weather_road"]').value;
+                    if (combinedCT) {
+                        const [cause, type] = combinedCT.split(', ');
+                        formData['road_accident_cause'] = cause;
+                        formData['road_accident_type'] = type;
+                    }
+                    if (combinedWR) {
+                        const [weather, road] = combinedWR.split(', ');
+                        formData['weather'] = weather;
+                        formData['road_condition'] = road;
+                    }
+                }
+                form.querySelectorAll('select').forEach(s => {
+                    if (s.name !== 'combined_cause_type' && s.name !== 'combined_weather_road') {
+                        formData[s.name] = s.value;
+                    }
+                });
+                if (emergencyType === 'Road Accident') socket.emit('pnp_response', formData);
+                else if (emergencyType === 'Fire Incident') socket.emit('pnp_fire_submitted', formData);
+                else if (emergencyType === 'Crime Incident') socket.emit('pnp_crime_submitted', formData);
                 
-            }
+                container.innerHTML = '<span style="color: #27ae60; font-weight: bold;">SUBMITTED</span>';
+                const row = container.closest('tr');
+                if(row) {
+                    row.querySelector('.status-cell').innerHTML = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
 
-            // YOUR 3 PREDICTION BLOCKS — 100% PRESERVED EXACTLY AS YOU WROTE
-            socket.on('pnp_response', (data) => {
-                fetch('/get_latest_prediction')
-                    .then(r => r.json())
-                    .then(data => updateChartsFromPrediction(data.prediction));
-                scrollToCharts();
-            });
+                    const predictionSpan = document.createElement('div');
+                    predictionSpan.innerHTML = '<em>Calculating prediction...</em>';
+                    predictionSpan.className = 'prediction-text';
+                    predictionSpan.style.fontSize = '12px';
+                    predictionSpan.style.color = 'black';
+                    container.appendChild(predictionSpan);
+                }
+                
+                if(alertTimers.has(data.alert_id)) {
+                    clearTimeout(alertTimers.get(data.alert_id));
+                    alertTimers.delete(data.alert_id);
+                }
 
-            socket.on('pnp_fire_submitted', (data) => {
-                fetch('/get_latest_fire_prediction')
-                    .then(r => r.json())
-                    .then(data => updateChartsFromPrediction(data.prediction));
-                scrollToCharts();
-            });
+                // TRIGGER 30-SECOND EXPIRATION AFTER SUBMISSION WITH 'RESPONDED' STATUS
+                const timerId = setTimeout(() => {
+                    moveToRecent(data.alert_id, 'RESPONDED');
+                }, 30000);
+                
+                alertTimers.set(data.alert_id, timerId);
+                liveAlerts.set(data.alert_id, { element: row });
+            };
+            form.appendChild(submitBtn);
+            container.appendChild(form);
+        }
 
-            socket.on('pnp_crime_submitted', (data) => {
-                console.log('PNP crime response submitted:', data);
-                const alertItem = alertElements.get(data.alert_id);
-                if (alertItem) {
-                    const predictionDiv = alertItem.querySelector('.prediction');
+        socket.on('pnp_response', (data) => {
+            fetch('/get_latest_prediction')
+                .then(r => r.json())
+                .then(data => updateRoadCharts({ full_year: data.prediction }));
+        });
+
+        socket.on('pnp_fire_submitted', (data) => {
+            fetch('/get_latest_fire_prediction')
+                .then(r => r.json())
+                .then(data => updateFireCharts(data)); // pass prediction object to the update function
+        });
+
+        socket.on('pnp_crime_submitted', (data) => {
+            const alertItem = alertElements.get(data.alert_id);
+            if (alertItem) {
+                const predContainer = alertItem.querySelector('.actions-cell .prediction-text');
+                if (predContainer) {
                     const predictionText = data.prediction || 'N/A';
                     let formattedPrediction = 'N/A';
                     if (predictionText !== 'N/A' && predictionText !== 'prediction_error') {
@@ -1312,30 +939,27 @@
                             formattedPrediction = predictionText;
                         }
                     }
-                    predictionDiv.textContent = `Prediction: ${formattedPrediction}`;
-                    predictionDiv.style.display = 'block';
-                    predictionDiv.style.fontSize = '16px';
-                    predictionDiv.style.color = 'black';
+                    predContainer.textContent = `Prediction: ${formattedPrediction}`;
                 }
-            });
-
-
-            function notifyAlert(data) {
-                const n = document.getElementById('notification');
-                n.textContent = `New ${data.emergency_type} Alert at ${data.barangay || 'Unknown'}`;
-                setTimeout(() => n.textContent = '', 6000);
             }
+        });
 
-            document.getElementById('image-modal').querySelector('.close-btn').onclick = () => {
-                document.getElementById('image-modal').style.display = 'none';
-            };
-
-            document.getElementById('recent-date-filter').addEventListener('change', (e) => {
-                const val = e.target.value;
-                document.querySelectorAll('#recent-alert-container .alert-item').forEach(item => {
-                    const timeText = item.querySelector('div:nth-child(4)').textContent;
-                    item.style.display = (!val || timeText.includes(val)) ? 'block' : 'none';
-                });
+        function notifyAlert(data) {
+            const n = document.getElementById('notification');
+            n.textContent = `New ${data.emergency_type} Alert at ${data.barangay || 'Unknown'}`;
+            setTimeout(() => n.textContent = '', 6000);
+        }
+        document.getElementById('image-modal').querySelector('.close-btn').onclick = () => {
+            document.getElementById('image-modal').style.display = 'none';
+        };
+        document.getElementById('recent-date-filter').addEventListener('change', (e) => {
+            const val = e.target.value;
+            document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
+                const timeText = item.querySelector('.time-cell').textContent;
+                // Basic date string matching (adjust slice if needed based on timezone string length)
+                const date = new Date().toISOString().slice(0,10);
+                item.style.display = (!val || val === date) ? 'table-row' : 'none';
             });
         });
-    </script>
+    });
+</script>

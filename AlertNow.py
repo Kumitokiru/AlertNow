@@ -59,7 +59,7 @@ from BarangayDashboard import (
     save_officer, get_recent_officers,
     handle_store_barangay_alert, handle_load_barangay_alerts,
     handle_load_barangay_expired, handle_move_barangay_to_recent, handle_update_barangay_alert_type, # Ensure this is imported
-    handle_remove_barangay_alert, handle_store_forwarded
+    handle_remove_barangay_alert, handle_store_forwarded, get_barangay_recent_counts
 )
 
 from CDRRMODashboard import (
@@ -67,8 +67,9 @@ from CDRRMODashboard import (
     get_cdrrmo_alerts_per_month, get_cdrrmo_responded_count, emit_cdrrmo_alerts_per_month_update,
     save_cdrrmo_officer, get_recent_cdrrmo_officers,
     handle_store_cdrrmo_alert, handle_load_cdrrmo_alerts, 
-    handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent
+    handle_load_cdrrmo_expired, handle_move_cdrrmo_to_recent, handle_remove_cdrrmo_alert
 )
+
 
 from PNPDashboard import (
     get_pnp_stats, get_latest_alert, get_the_pnp_stats, get_pnp_new_alert, get_pnp_alerts_per_month,
@@ -238,6 +239,7 @@ def handle_new_alert(data):
 def handle_forward_alert(data):
     logger.info(f"Forward alert received: {data}")
     try:
+        handle_store_forwarded(data)
         target_role = data.get('target_role').lower()
         municipality = get_municipality_from_barangay(data.get('barangay', 'Unknown'))
         alert_id = data.get('alert_id')
@@ -2363,6 +2365,10 @@ def update_barangay_alert_type_route():
     
     return handle_update_barangay_alert_type(alert_id, emergency_type)
 
+@app.route('/api/barangay_recent_counts')
+def api_barangay_recent_counts():
+    return get_barangay_recent_counts()
+
 @app.route('/load_barangay_alerts')
 def load_barangay_alerts_route():
     barangay = session.get('barangay')
@@ -2394,7 +2400,8 @@ def load_cdrrmo_expired_route():
 @app.route('/expire_cdrrmo_alert', methods=['POST'])
 def expire_cdrrmo_alert_route():
     data = request.get_json()
-    return handle_move_cdrrmo_to_recent(data['alert_id'])
+    status = data.get('status', 'EXPIRED')
+    return handle_move_cdrrmo_to_recent(data.get('alert_id'), status)
 
 # BFP
 @app.route('/load_bfp_alerts')
@@ -2408,7 +2415,8 @@ def load_bfp_expired_route():
 @app.route('/expire_bfp_alert', methods=['POST'])
 def expire_bfp_alert_route():
     data = request.get_json()
-    return handle_move_bfp_to_recent(data['alert_id'])
+    status = data.get('status', 'EXPIRED')
+    return handle_move_bfp_to_recent(data.get('alert_id'), status)
 
 @app.route('/remove_bfp_alert', methods=['POST'])
 def remove_bfp_alert_route():
@@ -2429,7 +2437,8 @@ def load_pnp_expired_route():
 @app.route('/expire_pnp_alert', methods=['POST'])
 def expire_pnp_alert_route():
     data = request.get_json()
-    return handle_move_pnp_to_recent(data['alert_id'])
+    status = data.get('status', 'EXPIRED') # Capture the dynamic status (RESPONDED/EXPIRED)
+    return handle_move_pnp_to_recent(data.get('alert_id'), status)
 
 
 app.route('/barangay_charts')(barangay_charts)
@@ -2536,6 +2545,13 @@ def store_agency_alert():
     except Exception as e:
         logger.error(f"Error in store_agency_alert: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/remove_cdrrmo_alert', methods=['POST'])
+def remove_cdrrmo_alert_route():
+    data = request.get_json()
+    alert_id = data.get('alert_id')
+    success = handle_remove_cdrrmo_alert(alert_id)
+    return jsonify({'success': success})
 
 if __name__ == '__main__':
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'users_web.db')

@@ -314,3 +314,30 @@ def handle_store_forwarded(data):
     except Exception as e:
         logger.error(f"Error storing forwarded alert explicitly: {e}")
         return jsonify({'success': False, 'error': str(e)})
+    
+def get_barangay_recent_counts():
+    try:
+        barangay = session.get('barangay')
+        if not barangay:
+            return jsonify({'total': 0, 'road': 0, 'fire': 0})
+        
+        conn = get_db_connection()
+        # Loading from barangay_alert (and expire for comprehensive recent view)
+        cursor1 = conn.execute("SELECT type FROM barangay_alert WHERE barangay = ?", (barangay,))
+        cursor2 = conn.execute("SELECT type FROM barangay_alert_expire WHERE barangay = ?", (barangay,))
+        
+        rows = cursor1.fetchall() + cursor2.fetchall()
+        conn.close()
+        
+        # Counting based on the type (which represents the status of the emergency type)
+        road_count = sum(1 for r in rows if r['type'] == 'Road Accident')
+        fire_count = sum(1 for r in rows if r['type'] == 'Fire Incident')
+        
+        return jsonify({
+            'total': road_count + fire_count, # Total of both Road Accident and Fire Incident
+            'road': road_count,
+            'fire': fire_count
+        })
+    except Exception as e:
+        logger.error(f"Error getting barangay recent counts: {e}")
+        return jsonify({'total': 0, 'road': 0, 'fire': 0})
