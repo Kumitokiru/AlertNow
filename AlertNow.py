@@ -1357,7 +1357,7 @@ def signup_barangay():
         province = request.form['province']
         contact_no = request.form['contact_no']
         password = request.form['password']
-        unique_id = construct_unique_id('barangay', barangay=barangay, contact_no=contact_no)
+        unique_id = construct_unique_id('barangay', barangay=barangay)
         
         conn = get_db_connection()
         try:
@@ -1447,7 +1447,7 @@ def signup_agency():
         contact_no = request.form['contact_no']
         password = request.form['password']
         assigned_hospital = request.form.get('assigned_hospital', '').lower() if role == 'hospital' else None
-        unique_id = construct_unique_id(role, assigned_municipality=assigned_municipality, contact_no=contact_no)
+        unique_id = construct_unique_id(role, assigned_municipality=assigned_municipality)
         
         conn = get_db_connection()
         try:

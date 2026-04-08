@@ -35,7 +35,21 @@ def get_connection_to_db():
     return conn
 
 def load_barangays():
-    barangays = {"San Pablo City": [], "Tiaong": []}
+    barangays = {"Alaminos": [],
+                "Candelaria": [],
+                "Lucena": [],
+                "Makati": [],
+                "Mandaluyong": [],
+                "Navotas": [],
+                "Pasig": [],
+                "Pateros": [],
+                "Quezon City": [],
+                "San Pablo City": [],
+                "Sariaya": [],
+                "Santo Tomas": [],
+                "Taguig": [],
+                "Tiaong": []
+                }
     lat_lon_map = {}
 
     csv_path = os.path.join(app.static_folder, 'Barangay.csv')
@@ -62,7 +76,19 @@ def load_barangays():
                         lat_lon_map[barangay] = (lat, lon)
 
         # Sort alphabetically
+        barangays["Alaminos"].sort()
+        barangays["Candelaria"].sort()
+        barangays["Lucena"].sort()
+        barangays["Makati"].sort()
+        barangays["Mandaluyong"].sort()
+        barangays["Navotas"].sort()
+        barangays["Pasig"].sort()
+        barangays["Pateros"].sort()
+        barangays["Quezon City"].sort()
         barangays["San Pablo City"].sort()
+        barangays["Sariaya"].sort()
+        barangays["Santo Tomas"].sort()
+        barangays["Taguig"].sort()
         barangays["Tiaong"].sort()
 
         logger.info(f"Loaded {sum(len(v) for v in barangays.values())} barangays from CSV")
@@ -75,7 +101,20 @@ def load_barangays():
 try:
     BARANGAYS_DATA, LAT_LON_DATA = load_barangays()
 except:
-    BARANGAYS_DATA = {"San Pablo City": [], "Tiaong": []}
+    BARANGAYS_DATA = {"Alaminos": [],
+                "Candelaria": [],
+                "Lucena": [],
+                "Makati": [],
+                "Mandaluyong": [],
+                "Navotas": [],
+                "Pasig": [],
+                "Pateros": [],
+                "Quezon City": [],
+                "San Pablo City": [],
+                "Sariaya": [],
+                "Santo Tomas": [],
+                "Taguig": [],
+                "Tiaong": []}
     LAT_LON_DATA = {}
 @signup_bp.route('/signup_barangay', methods=['GET', 'POST'])
 def signup_barangay():

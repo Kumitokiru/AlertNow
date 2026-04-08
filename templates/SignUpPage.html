@@ -27,8 +27,21 @@
 
                 <select name="municipality" id="municipality" onchange="updateBarangayDropdown()" required class="select-role">
                     <option value="">Select Assigned Municipality</option>
+                    <option value="Alaminos">Alaminos</option>
+                    <option value="Candelaria">Candelaria</option>
+                    <option value="Lucena">Lucena</option>
+                    <option value="Makati">Makati</option>
+                    <option value="Mandaluyong">Mandaluyong</option>
+                    <option value="Navotas">Navotas</option>
+                    <option value="Pateros">Pateros</option>
+                    <option value="Pasig">Pasig</option>
+                    <option value="Quezon City">Quezon City</option>
                     <option value="San Pablo City">San Pablo City</option>
+                    <option value="Sariaya">Sariaya</option>
+                    <option value="Santo Tomas">Santo Tomas</option>
+                    <option value="Taguig">Taguig</option>
                     <option value="Tiaong">Tiaong</option>
+                    
                 </select>
 
                 <select name="barangay" id="barangay" onchange="setLatLon()" required class="select-role">
@@ -69,7 +82,19 @@
             }
 
             const barangays = {
+                "Alaminos": [],
+                "Candelaria": [],
+                "Lucena": [],
+                "Makati": [],
+                "Mandaluyong": [],
+                "Navotas" : [],
+                "Pasig": [],
+                "Pateros": [],
+                "Quezon City": [],
                 "San Pablo City": [],
+                "Sariaya": [],
+                "Santo Tomas": [],
+                "Taguig": [],
                 "Tiaong": []
             };
 
@@ -90,7 +115,20 @@
                                 const lat = parts[2].trim();
                                 const lon = parts[3].trim();
 
-                                if (municipality === "San Pablo City" || municipality === "Tiaong") {
+                                if (municipality === "Alaminos" ||
+                                    municipality === "Candelaria" ||
+                                    municipality === "Lucena" ||
+                                    municipality === "Makati" ||
+                                    municipality === "Mandaluyong" ||
+                                    municipality === "Navotas" ||
+                                    municipality === "Pasig" ||
+                                    municipality === "Pateros" ||
+                                    municipality === "Quezon City" ||
+                                    municipality === "San Pablo City" ||
+                                    municipality === "Sariaya" ||
+                                    municipality === "Santo Tomas" ||
+                                    municipality === "Taguig" ||
+                                    municipality === "Tiaong") {
                                     barangays[municipality].push(barangay);
                                     latLonMap[barangay] = { lat: lat, lon: lon };
                                 }
@@ -99,7 +137,19 @@
                     });
 
                     // Sort barangays
+                    barangays["Alaminos"].sort();
+                    barangays["Candelaria"].sort();
+                    barangays["Lucena"].sort();
+                    barangays["Makati"].sort();
+                    barangays["Mandaluyong"].sort();
+                    barangays["Navotas"].sort();
+                    barangays["Pasig"].sort();
+                    barangays["Pateros"].sort();
+                    barangays["Quezon City"].sort();
                     barangays["San Pablo City"].sort();
+                    barangays["Sariaya"].sort();
+                    barangays["Santo Tomas"].sort();
+                    barangays["Taguig"].sort();
                     barangays["Tiaong"].sort();
 
                     // Initial load
@@ -125,15 +175,39 @@
                     });
 
                     // Set province
-                    if (selectedMunicipality === "San Pablo City") {
+                    if (selectedMunicipality === "Alaminos") {
                         provinceInput.value = "Laguna";
+                    } else if (selectedMunicipality === "Candelaria") {
+                        provinceInput.value = "Quezon Province";
+                    } else if (selectedMunicipality === "Lucena") {
+                        provinceInput.value = "Quezon Province";
+                    } else if (selectedMunicipality === "Makati") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "Mandaluyong") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "Navotas") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "Pasig") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "Pateros") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "Quezon City") {
+                        provinceInput.value = "Metro Manila";
+                    } else if (selectedMunicipality === "San Pablo City") {
+                        provinceInput.value = "Laguna";
+                    } else if (selectedMunicipality === "Sariaya") {
+                        provinceInput.value = "Quezon Province";
+                    } else if (selectedMunicipality === "Santo Tomas") {
+                        provinceInput.value = "Batangas";
+                    } else if (selectedMunicipality === "Taguig") {
+                        provinceInput.value = "Metro Manila";
                     } else if (selectedMunicipality === "Tiaong") {
                         provinceInput.value = "Quezon Province";
-                    }
-                } else {
+                    } else {
                     provinceInput.value = "";
                 }
             }
+        }
 
             function setLatLon() {
                 const barangaySelect = document.getElementById('barangay');
