@@ -139,8 +139,9 @@
                 month: 'short', 
                 day: 'numeric', 
                 year: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit' 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    timeZone: 'Asia/Manila'
             });
             dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
         } catch(e){}
@@ -223,7 +224,7 @@
                     const div = document.createElement('div');
                     div.className = 'officer-item';
                     div.innerHTML = `
-                        <div class="officer-date">${item.date}</div>
+                        <div class="officer-date">${new Date(item.date).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</div>
                         <div class="officer-name">${item.name}</div>
                     `;
                     list.appendChild(div);
@@ -494,7 +495,8 @@
                     day: 'numeric', 
                     year: 'numeric', 
                     hour: 'numeric', 
-                    minute: '2-digit' 
+                    minute: '2-digit',
+                    timeZone: 'Asia/Manila'
                 });
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
@@ -917,44 +919,47 @@
             }
         }
 
-        const selectedDates = new Set();
+        let currentStartDate = null;
+        let currentEndDate = null;
 
-        document.getElementById('add-date-btn')?.addEventListener('click', () => {
-            const dateVal = document.getElementById('recent-date-input').value;
-            if (dateVal) {
-                selectedDates.add(dateVal);
-                updateDateDisplay();
-                filterRecentTable();
+        document.getElementById('apply-date-filter-btn')?.addEventListener('click', () => {
+            const startInput = document.getElementById('start-date-input').value;
+            const endInput = document.getElementById('end-date-input').value || startInput;
+
+            if (!startInput) {
+                filterRecentTable(null, null);
+                return;
             }
+
+            currentStartDate = startInput;
+            currentEndDate = endInput;
+
+            const display = document.getElementById('selected-dates-display');
+            display.textContent = `Showing: ${startInput} to ${endInput}`;
+
+            filterRecentTable(currentStartDate, currentEndDate);
         });
 
         document.getElementById('clear-dates-btn')?.addEventListener('click', () => {
-            selectedDates.clear();
-            document.getElementById('recent-date-input').value = '';
-            updateDateDisplay();
-            filterRecentTable();
+            document.getElementById('start-date-input').value = '';
+            document.getElementById('end-date-input').value = '';
+            currentStartDate = null;
+            currentEndDate = null;
+            document.getElementById('selected-dates-display').textContent = '';
+            filterRecentTable(null, null);
         });
 
-        function updateDateDisplay() {
-            const display = document.getElementById('selected-dates-display');
-            if (selectedDates.size > 0) {
-                display.textContent = "Selected Dates: " + Array.from(selectedDates).sort().join(', ');
-            } else {
-                display.textContent = "";
-            }
-        }
-
-        function filterRecentTable() {
+        function filterRecentTable(startDate, endDate) {
             document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
-                if (selectedDates.size === 0) {
+                if (!startDate && !endDate) {
+                    item.style.display = 'table-row';
+                    return;
+                }
+                const rowDate = item.getAttribute('data-date');
+                if (rowDate && rowDate >= startDate && rowDate <= endDate) {
                     item.style.display = 'table-row';
                 } else {
-                    const rowDate = item.getAttribute('data-date');
-                    if (selectedDates.has(rowDate)) {
-                        item.style.display = 'table-row';
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    item.style.display = 'none';
                 }
             });
         }

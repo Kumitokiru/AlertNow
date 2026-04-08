@@ -91,7 +91,7 @@
                     const div = document.createElement('div');
                     div.className = 'officer-item';
                     div.innerHTML = `
-                        <div class="officer-date">${item.date}</div>
+                        <div class="officer-date">${new Date(item.date).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</div>
                         <div class="officer-name">${item.name}</div>
                     `;
                     list.appendChild(div);
@@ -170,7 +170,8 @@
                     const dObj = new Date(d.time || d.timestamp);
                     timeStr = dObj.toLocaleString('en-US', { 
                         month: 'short', day: 'numeric', year: 'numeric', 
-                        hour: 'numeric', minute: '2-digit' 
+                        hour: 'numeric', minute: '2-digit',
+                        timeZone: 'Asia/Manila'
                     });
                     dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
                 } catch(e){}
@@ -180,12 +181,12 @@
                 if (d.status === 'RESPONDED') {
                     statusHtml = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
                 } else {
-                    statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+                    statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">LAPSE</span>';
                 }
 
                 row.innerHTML = `
                     <td class="status-cell">${statusHtml}</td>
-                    <td class="time-cell">${new Date(d.time || d.timestamp).toLocaleTimeString()}</td>
+                    <td class="time-cell">${new Date(d.time || d.timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Manila' })}</td>
                     <td class="barangay-cell">${d.barangay}</td>
                     <td class="type-cell">${d.type || d.emergency_type || 'Fire Incident'}</td>
                     <td class="image-cell">${d.image ? `<img src="data:image/jpeg;base64,${d.image}" class="alert-thumbnail" style="width:60px; height:60px; cursor:pointer;" onclick="showImage('${d.image}')" />` : 'No Image'}</td>
@@ -213,7 +214,7 @@
         if (status === 'RESPONDED') {
             statusHtml = '<span class="status-responded" style="color: #27ae60; font-weight: bold;">RESPONDED</span>';
         } else {
-            statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">EXPIRED</span>';
+            statusHtml = '<span class="status-expired" style="color: #95a5a6; font-weight: bold;">LAPSE</span>';
         }
         element.querySelector('.status-cell').innerHTML = statusHtml;
 
@@ -500,7 +501,8 @@
                     day: 'numeric', 
                     year: 'numeric', 
                     hour: 'numeric', 
-                    minute: '2-digit' 
+                    minute: '2-digit',
+                    timeZone: 'Asia/Manila'
                 });
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
@@ -673,44 +675,47 @@
             setTimeout(() => n.textContent = '', 6000);
         }
 
-        const selectedDates = new Set();
+        let currentStartDate = null;
+        let currentEndDate = null;
 
-        document.getElementById('add-date-btn')?.addEventListener('click', () => {
-            const dateVal = document.getElementById('recent-date-input').value;
-            if (dateVal) {
-                selectedDates.add(dateVal);
-                updateDateDisplay();
-                filterRecentTable();
+        document.getElementById('apply-date-filter-btn')?.addEventListener('click', () => {
+            const startInput = document.getElementById('start-date-input').value;
+            const endInput = document.getElementById('end-date-input').value || startInput;
+
+            if (!startInput) {
+                filterRecentTable(null, null);
+                return;
             }
+
+            currentStartDate = startInput;
+            currentEndDate = endInput;
+
+            const display = document.getElementById('selected-dates-display');
+            display.textContent = `Showing: ${startInput} to ${endInput}`;
+
+            filterRecentTable(currentStartDate, currentEndDate);
         });
 
         document.getElementById('clear-dates-btn')?.addEventListener('click', () => {
-            selectedDates.clear();
-            document.getElementById('recent-date-input').value = '';
-            updateDateDisplay();
-            filterRecentTable();
+            document.getElementById('start-date-input').value = '';
+            document.getElementById('end-date-input').value = '';
+            currentStartDate = null;
+            currentEndDate = null;
+            document.getElementById('selected-dates-display').textContent = '';
+            filterRecentTable(null, null);
         });
 
-        function updateDateDisplay() {
-            const display = document.getElementById('selected-dates-display');
-            if (selectedDates.size > 0) {
-                display.textContent = "Selected Dates: " + Array.from(selectedDates).join(', ');
-            } else {
-                display.textContent = "";
-            }
-        }
-
-        function filterRecentTable() {
+        function filterRecentTable(startDate, endDate) {
             document.querySelectorAll('#recent-alert-container .alert-row').forEach(item => {
-                if (selectedDates.size === 0) {
+                if (!startDate && !endDate) {
+                    item.style.display = 'table-row';
+                    return;
+                }
+                const rowDate = item.getAttribute('data-date');
+                if (rowDate && rowDate >= startDate && rowDate <= endDate) {
                     item.style.display = 'table-row';
                 } else {
-                    const rowDate = item.getAttribute('data-date');
-                    if (selectedDates.has(rowDate)) {
-                        item.style.display = 'table-row';
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    item.style.display = 'none';
                 }
             });
         }
