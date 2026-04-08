@@ -128,21 +128,24 @@
         const row = document.createElement('tr');
         row.className = 'alert-row';
         row.id = `alert-${d.alert_id}`;
+        row.style.cursor = 'pointer';
+        row.onclick = () => highlightAlertOnMap(d.alert_id);
 
         let dateVal = '';
-        let timeStr = new Date().toLocaleString();
+        let timeStr = '';
         try {
             const dObj = new Date(d.time || d.timestamp);
-            timeStr = dObj.toLocaleString();
-            // Standardize format to YYYY-MM-DD for attribute matching
-            const year = dObj.getFullYear();
-            const month = String(dObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dObj.getDate()).padStart(2, '0');
-            dateVal = `${year}-${month}-${day}`;
+            timeStr = dObj.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit' 
+            });
+            dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
         } catch(e){}
 
         row.setAttribute('data-date', dateVal);
-
 
         row.innerHTML = `
             <td class="status-cell">${
@@ -475,24 +478,38 @@
             const alertItem = document.createElement('tr');
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
+            alertItem.addEventListener('click', function(e) {
+                if (e.target.closest('.actions-cell') || e.target.closest('.image-cell')) {
+                    return;   // ← Prevents scroll when clicking Image or Actions
+                }
+                highlightAlertOnMap(data.alert_id);
+            });
 
             let dateVal = '';
-            let timeStr = new Date().toLocaleString();
+            let timeStr = '';
             try {
                 const dObj = new Date(data.timestamp || data.time || Date.now());
-                timeStr = dObj.toLocaleString();
+                timeStr = dObj.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                });
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
+
             alertItem.setAttribute('data-date', dateVal);
 
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                <td class="time-cell">${new Date(data.timestamp || data.time || Date.now()).toLocaleTimeString()}</td>
+                <td class="time-cell">${timeStr}</td>
                 <td class="barangay-cell">${data.barangay}</td>
                 <td class="type-cell"></td>
                 <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" />` : 'No Image'}</td>
                 <td class="actions-cell"></td>
             `;
+
             const actionsCell = alertItem.querySelector('.actions-cell');
             
             if (isLive) {
@@ -534,8 +551,8 @@
                                 barangay: '{{ barangay }}',
                                 lat: data.lat,
                                 lon: data.lon,
-                                image: data.image,
-                                timestamp: data.timestamp || new Date().toISOString()
+                                image: data.image, // Pass the original timestamp
+                                timestamp: data.timestamp || data.time || new Date().toISOString()
                             };
                             if (tr === 'pnp') socket.emit('pnp_redirect_alert', redirectData);
                             else socket.emit('redirect_alert', redirectData);
@@ -940,6 +957,30 @@
                     }
                 }
             });
+        }
+
+        function highlightAlertOnMap(alertId) {
+            const mapSection = document.getElementById('map');
+            if (mapSection) {
+                mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Highlight the marker if it exists
+            if (window.activeMarkers && window.activeMarkers[alertId]) {
+                const marker = window.activeMarkers[alertId];
+                marker.openPopup();
+                
+                // Optional: brief flash effect on marker
+                if (marker._icon) {
+                    const originalColor = marker._icon.style.backgroundColor;
+                    marker._icon.style.backgroundColor = '#ff0000';
+                    setTimeout(() => {
+                        marker._icon.style.backgroundColor = originalColor || '';
+                    }, 800);
+                }
+            } else {
+                console.log(`No marker found for alert ${alertId}`);
+            }
         }
 
         document.getElementById('download-csv-btn')?.addEventListener('click', () => {

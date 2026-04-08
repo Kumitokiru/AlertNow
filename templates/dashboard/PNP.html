@@ -124,14 +124,26 @@
                 const row = document.createElement('tr');
                 row.className = 'alert-row';
                 row.id = `alert-${d.alert_id}`;
+                row.style.cursor = 'pointer';
+
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.actions-cell') || e.target.closest('.image-cell')) return;
+                    highlightAlertOnMap(d.alert_id);
+                });
 
                 let dateVal = '';
-                let timeStr = new Date().toLocaleString();
+                let timeStr = '';
                 try {
-                    const dObj = new Date(d.time);
-                    timeStr = dObj.toLocaleString();
+                    const dObj = new Date(d.time || d.timestamp);
+                    timeStr = dObj.toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric', 
+                        hour: 'numeric', minute: '2-digit' 
+                    });
                     dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
                 } catch(e){}
+                row.setAttribute('data-date', dateVal);
+
+                row.setAttribute('data-date', dateVal);
                 row.setAttribute('data-date', dateVal);
                 
                 // Dynamic Status checking for RESPONDED vs EXPIRED
@@ -742,19 +754,29 @@
             const alertItem = document.createElement('tr');
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
+            alertItem.style.cursor = 'pointer';
+
+            alertItem.addEventListener('click', function(e) {
+                if (e.target.closest('.actions-cell') || e.target.closest('.image-cell')) return;
+                highlightAlertOnMap(data.alert_id);
+            });
 
             let dateVal = '';
-            let timeStr = new Date().toLocaleString();
+            let timeStr = '';
             try {
-                const dObj = new Date(data.time || Date.now());
-                timeStr = dObj.toLocaleString();
+                const dObj = new Date(data.timestamp || data.time || Date.now());
+                timeStr = dObj.toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', year: 'numeric', 
+                    hour: 'numeric', minute: '2-digit' 
+                });
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
+
             alertItem.setAttribute('data-date', dateVal);
 
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                <td class="time-cell">${new Date(data.time || Date.now()).toLocaleTimeString()}</td>
+                <td class="time-cell">${timeStr}</td>
                 <td class="barangay-cell">${data.barangay}</td>
                 <td class="type-cell">${data.emergency_type || data.type || 'Road Accident'}</td>
                 <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
@@ -776,6 +798,14 @@
 
             if (isLive) {
                 liveAlerts.set(data.alert_id, { element: alertItem, data: data });
+            }
+        }
+
+        function highlightAlertOnMap(alertId) {
+            const mapSection = document.getElementById('map');
+            if (mapSection) mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (window.activeMarkers && window.activeMarkers[alertId]) {
+                window.activeMarkers[alertId].openPopup();
             }
         }
 
@@ -982,11 +1012,18 @@
             n.textContent = `New ${data.emergency_type} Alert at ${data.barangay || 'Unknown'}`;
             setTimeout(() => n.textContent = '', 6000);
         }
-        document.getElementById('image-modal').querySelector('.close-btn').onclick = () => {
-            document.getElementById('image-modal').style.display = 'none';
-        };
         
         const selectedDates = new Set();
+
+        window.showImage = function(base64) {
+            document.getElementById('modal-image').src = `data:image/jpeg;base64,${base64}`;
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+        
+        document.querySelector('.close-btn').addEventListener('click', () => {
+            document.getElementById('image-modal').style.display = 'none';
+        });
+
 
         document.getElementById('add-date-btn')?.addEventListener('click', () => {
             const dateVal = document.getElementById('recent-date-input').value;

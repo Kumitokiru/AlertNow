@@ -157,12 +157,21 @@
                 const row = document.createElement('tr');
                 row.className = 'alert-row';
                 row.id = `alert-${d.alert_id}`;
+                row.style.cursor = 'pointer';
+
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.actions-cell') || e.target.closest('.image-cell')) return;
+                    highlightAlertOnMap(d.alert_id);
+                });
 
                 let dateVal = '';
-                let timeStr = new Date().toLocaleString();
+                let timeStr = '';
                 try {
                     const dObj = new Date(d.time || d.timestamp);
-                    timeStr = dObj.toLocaleString();
+                    timeStr = dObj.toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric', 
+                        hour: 'numeric', minute: '2-digit' 
+                    });
                     dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
                 } catch(e){}
                 row.setAttribute('data-date', dateVal);
@@ -473,19 +482,33 @@
             const alertItem = document.createElement('tr');
             alertItem.className = 'alert-row';
             alertItem.id = `alert-${data.alert_id}`;
+            alertItem.style.cursor = 'pointer';
+
+            alertItem.addEventListener('click', function(e) {
+                if (e.target.closest('.actions-cell') || e.target.closest('.image-cell')) {
+                    return;   // ← Prevents scroll when clicking Image or Actions
+                }
+                highlightAlertOnMap(data.alert_id);
+            });
 
             let dateVal = '';
-            let timeStr = new Date().toLocaleString();
+            let timeStr = '';
             try {
                 const dObj = new Date(data.timestamp || data.time || Date.now());
-                timeStr = dObj.toLocaleString();
+                timeStr = dObj.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                });
                 dateVal = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0') + "-" + String(dObj.getDate()).padStart(2, '0');
             } catch(e){}
             alertItem.setAttribute('data-date', dateVal);
 
             alertItem.innerHTML = `
                 <td class="status-cell"><span class="status-pending" style="color: #e74c3c; font-weight: bold;">PENDING</span></td>
-                <td class="time-cell">${new Date(data.timestamp || data.time || Date.now()).toLocaleTimeString()}</td>
+                <td class="time-cell">${timeStr}</td>
                 <td class="barangay-cell">${data.barangay}</td>
                 <td class="type-cell">${data.emergency_type || data.type || 'Fire Incident'}</td>
                 <td class="image-cell">${data.image ? `<img src="data:image/jpeg;base64,${data.image}" class="alert-thumbnail" onclick="showImage('${data.image}')" style="width:60px; height:60px; cursor:pointer; border-radius: 4px;" />` : 'No Image'}</td>
@@ -508,6 +531,14 @@
                 const marker = L.marker([data.lat, data.lon]).addTo(window.bfpMap)
                     .bindPopup(`<b>${data.type || data.emergency_type || 'Fire Incident'}</b><br>${data.barangay}`);
                 window.activeMarkers[data.alert_id] = marker;
+            }
+        }
+
+        function highlightAlertOnMap(alertId) {
+            const mapSection = document.getElementById('map');
+            if (mapSection) mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (window.activeMarkers && window.activeMarkers[alertId]) {
+                window.activeMarkers[alertId].openPopup();
             }
         }
 

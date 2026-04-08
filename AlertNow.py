@@ -741,8 +741,8 @@ def handle_redirect_alert(data):
         municipality = data.get('municipality', '').lower()
         
         # Ensure timestamp exists to prevent KeyErrors
-        if 'timestamp' not in data:
-             data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).isoformat()
+        if 'timestamp' not in data or not data.get('timestamp'):
+            data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).isoformat()
 
         # Store based on role (Persist to DB)
         if target_role == 'cdrrmo':
@@ -808,7 +808,7 @@ def store_forwarded_route():
 @socketio.on('pnp_redirect_alert')
 def handle_pnp_redirect_alert(data):
     logger.info(f"Received PNP redirect alert: {data}")
-    timestamp = datetime.now(pytz.timezone('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.now(pytz.timezone('Asia/Manila')).isoformat()   # ← Changed to isoformat() for full date+time
     data['timestamp'] = timestamp
 
     # Store in DB
