@@ -219,25 +219,24 @@ def handle_new_alert(data):
         
         alerts.append(data)
         
-        # Persistent Storage
         handle_store_barangay_alert(data) 
         
         barangay_room = f"barangay_{data.get('barangay').lower() if data.get('barangay') else ''}"
         
-        # Emit to barangay room AND broadcast to ensure all residents in same barangay receive it
         emit('new_alert', data, room=barangay_room)
-        emit('new_alert', data, broadcast=True)   # ← Added for multi-device reliability
+        emit('new_alert', data, broadcast=True)   # Ensures all residents in barangay receive it
         
-        logger.info(f"Alert emitted to room {barangay_room} and broadcasted")
-        
+        # Send map update with alert_id so multiple pins can be tracked
         map_data = {
             'lat': data.get('lat'),
             'lon': data.get('lon'),
             'barangay': data.get('barangay'),
-            'emergency_type': data.get('emergency_type')
+            'emergency_type': data.get('emergency_type'),
+            'alert_id': alert_id
         }
-        data['expired'] = False
         emit('update_map', map_data, room=barangay_room)
+        
+        logger.info(f"Alert {alert_id} emitted with map update")
     except Exception as e:
         logger.error(f"Error handling alert: {e}")
 

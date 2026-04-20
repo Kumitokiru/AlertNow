@@ -346,6 +346,14 @@
             console.log('New alert received:', data);
             updateUIWithAlert(data);
             notifyAlert(data);
+
+            // ADD PIN FOR EVERY NEW ALERT (multiple residents = multiple pins)
+            if (data.lat && data.lon) {
+                const marker = L.marker([data.lat, data.lon]).addTo(barangayMap)
+                    .bindPopup(`Alert from ${data.barangay} Resident<br>Emergency: ${data.emergency_type || 'Unknown'}`)
+                    .openPopup();
+                window.activeMarkers[data.alert_id] = marker;
+            }
         });
 
         socket.on('redirected_alert', (data) => {
