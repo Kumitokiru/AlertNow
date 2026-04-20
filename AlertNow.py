@@ -212,7 +212,6 @@ def handle_new_alert(data):
         alert_id = str(uuid.uuid4())
         data['alert_id'] = alert_id
         
-        # Ensure timestamp exists
         if 'timestamp' not in data:
             data['timestamp'] = datetime.now(pytz.timezone('Asia/Manila')).isoformat()
             
@@ -224,8 +223,12 @@ def handle_new_alert(data):
         handle_store_barangay_alert(data) 
         
         barangay_room = f"barangay_{data.get('barangay').lower() if data.get('barangay') else ''}"
+        
+        # Emit to barangay room AND broadcast to ensure all residents in same barangay receive it
         emit('new_alert', data, room=barangay_room)
-        logger.info(f"Alert emitted to room {barangay_room}")
+        emit('new_alert', data, broadcast=True)   # ← Added for multi-device reliability
+        
+        logger.info(f"Alert emitted to room {barangay_room} and broadcasted")
         
         map_data = {
             'lat': data.get('lat'),
