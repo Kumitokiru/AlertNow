@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/residentPageLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E95858">
+
+
+    <LinearLayout
+        android:id="@+id/nav_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/nav_bar2_border"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:elevation="8dp">
+
+        <ImageView
+            android:id="@+id/alertlogo"
+            android:layout_width="180dp"
+            android:layout_height="40dp"
+            android:src="@drawable/alertlogo"
+            android:contentDescription="AlertNow Logo"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end|center_vertical">
+
+            <Button
+                android:id="@+id/layas"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="@drawable/logout"
+                android:backgroundTint="#deeaee"
+                android:gravity="center"
+                android:textColor="#000000"
+                android:layout_marginEnd="10dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+
+    <TextView
+        android:id="@+id/latLonText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="340dp"
+        android:textColor="#FFFFFF"
+        android:text="Location: N/A"
+        android:textSize="16sp" />
+
+    <ImageView
+        android:id="@+id/photoView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_below="@id/latLonText"
+        android:layout_marginTop="8dp"
+        android:contentDescription="Uploaded photo"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/uploadPhotoButton"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/photoView"
+        android:layout_marginLeft="130dp"
+        android:background="@drawable/round_button"
+        android:radius="15dp"
+        android:textSize="15dp"
+        android:textColor="#FFFF"
+        android:text="Capture Image" />
+
+    <Button
+        android:id="@+id/alertButton"
+        android:layout_width="170dp"
+        android:layout_height="250dp"
+        android:layout_marginLeft="120dp"
+        android:layout_marginTop="20dp"
+        android:layout_below="@id/uploadPhotoButton"
+        android:background="@drawable/circle"
+
+        android:text="Alert Now"
+        android:textColor="#E95858"
+        android:textSize="30dp"
+        android:gravity="center"
+        android:elevation="8dp"
+        android:stateListAnimator="@null"/>
+
+
+
+</RelativeLayout>

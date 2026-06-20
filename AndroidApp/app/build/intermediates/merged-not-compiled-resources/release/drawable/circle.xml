@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#40FF5252">  <!-- Ripple: 25% opacity red -->
+
+    <!-- Main Button (with your shape: red fill + padding) -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" /> <!-- Your red -->
+
+            <stroke
+                android:width="4dp"
+                android:color="#FFFFFF" /> <!-- Optional: white border for pop -->
+
+            <padding
+                android:left="24dp"
+                android:right="24dp"
+                android:top="12dp"
+                android:bottom="12dp" />
+        </shape>
+    </item>
+
+    <!-- Mask for ripple to follow oval shape -->
+    <item android:id="@android:id/mask">
+        <shape android:shape="oval">
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
+
+</ripple>

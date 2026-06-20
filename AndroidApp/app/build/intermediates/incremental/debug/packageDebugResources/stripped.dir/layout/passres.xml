@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f0f4f8"
+    android:padding="30dp">
+
+    <!-- Back Button -->
+
+
+    <!-- Logo -->
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_width="49dp"
+        android:layout_height="40dp"
+        android:background="@drawable/logout"
+        android:backgroundTint="#000000"
+        android:gravity="center"
+        android:textColor="#000000" />
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/alertnow_round"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:contentDescription="Alert Now Logo" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reset Your Password"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="#000"
+        android:layout_below="@id/logo"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp" />
+
+    <!-- Subtitle -->
+
+
+    <!-- Role Label -->
+    <TextView
+        android:id="@+id/label_role"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Role:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000"
+        android:layout_below="@id/logo"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="100dp" />
+
+    <!-- Role Dropdown -->
+    <Spinner
+        android:id="@+id/spinner_role"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/label_role"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/spinner_background"
+        android:paddingStart="12dp" />
+
+    <TextView
+        android:id="@+id/label_username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Username:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000"
+        android:layout_below="@id/spinner_role"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp" />
+
+    <EditText
+        android:id="@+id/et_username"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/label_username"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:hint="Enter username"
+        android:background="@drawable/input_background"
+        android:paddingStart="12dp"
+        android:textColor="#000"
+        android:textSize="16sp" />
+
+    <!-- Contact Number Label -->
+    <TextView
+        android:id="@+id/label_contact"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Contact Number:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000"
+        android:layout_below="@id/spinner_role"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="120dp" />
+
+    <!-- Contact Number Input -->
+    <EditText
+        android:id="@+id/et_contact"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/label_contact"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:hint="Enter contact number"
+        android:inputType="phone"
+        android:background="@drawable/input_background"
+        android:paddingStart="12dp"
+        android:textColor="#000"
+        android:textSize="16sp" />
+
+    <!-- Password Label -->
+    <TextView
+        android:id="@+id/label_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Password:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000"
+        android:layout_below="@id/et_contact"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp" />
+
+    <!-- Password Input (Initially Disabled) -->
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/label_password"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:hint="Enter new password"
+        android:inputType="textPassword"
+        android:background="@drawable/input_background_disabled"
+        android:paddingStart="12dp"
+        android:textColor="#666"
+        android:textSize="16sp"
+        android:enabled="false" />
+
+    <!-- Save Button -->
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="180dp"
+        android:layout_height="50dp"
+        android:text="Save"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/button_rounded"
+        android:textColor="#000"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/et_password"
+        android:layout_marginTop="40dp" />
+
+</RelativeLayout>

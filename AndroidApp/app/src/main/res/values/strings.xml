@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">AlertNow</string>
+
+    <!-- Common UI strings -->
+    <string name="signup">Sign Up</string>
+    <string name="login">Log In</string>
+    <string name="back">Back</string>
+    <string name="next">Next</string>
+    <string name="respond">Respond</string>
+    <string name="alert_now">Alert Now</string>
+    <string name="upload_photo">Upload Photo</string>
+    <string name="quick_map_scan">Quick Map Scan</string>
+
+
+    <!-- Field hints -->
+    <string name="hint_username">Username</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_first_name">First Name</string>
+    <string name="hint_middle_name">Middle Name</string>
+    <string name="hint_last_name">Last Name</string>
+    <string name="hint_age">Age</string>
+    <string name="hint_contact_no">Contact No.</string>
+    <string name="hint_house_no">House No.</string>
+    <string name="hint_street_no">Street No.</string>
+    <string name="hint_barangay">Barangay</string>
+    <string name="hint_city">City</string>
+    <string name="hint_province">Province</string>
+    <string name="hint_municipality">Assigned Municipality</string>
+
+    <!-- Labels -->
+    <string name="label_role">Role</string>
+    <string name="label_position">Position (if Official)</string>
+    <string name="label_personal_info">Personal Information</string>
+    <string name="label_address">Address</string>
+    <string name="label_location">Location: N/A</string>
+    <string name="label_barangay">Barangay: N/A</string>
+    <string name="label_type">Type: N/A</string>
+
+    <!-- Error messages -->
+    <string name="error_all_fields_required">All fields are required.</string>
+    <string name="error_signup_failed">Signup failed: Username exists.</string>
+    <string name="error_signup_success">Signup successful.</string>
+    <string name="error_login_failed">Login failed.</string>
+    <string name="error_invalid_role">Invalid role.</string>
+    <string name="error_location_permission">Location permission required.</string>
+    <string name="error_location_unavailable">Unable to get location.</string>
+    <string name="error_image_load_failed">Failed to load image.</string>
+    <string name="error_image_classification_failed">Image classification failed.</string>
+    <string name="error_alert_failed">Alert failed.</string>
+    <string name="error_alert_sent">Alert sent.</string>
+    <string name="error_permission_required">Permission required.</string>
+    <string name="error_parsing_response">Error parsing response.</string>
+
+
+    <string name="resident">Resident</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="age">Age</string>
+    <string name="contact_number">Contact Number</string>
+    <string name="password">Password</string>
+    <string name="city_municipality">City/Municipality</string>
+    <string name="province">Province</string>
+    <string name="zip_code">Zip Code</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="username">Username</string>
+
+    <string name="alertButton">Alert Now</string>
+    <string name="uploadPhotoButton">Upload Photo</string>
+
+    <!-- Success messages -->
+    <string name="success_location_scanned">Location: %1$s, %2$s</string>
+    <string name="success_image_classified">Classified as: %1$s</string>
+
+    <string name="persoinfo">Personal Information</string>
+    <string name="adinfo">Address</string>
+
+    <string name="alert_success">Alert sent successfully</string>
+    <string name="alert_failed">Failed to send alert: %s</string>
+    <string name="location_error">Unable to get location</string>
+    <string name="permission_required">Location permission required</string>
+    <string name="title_activity_maps">MapsActivity</string>
+</resources>

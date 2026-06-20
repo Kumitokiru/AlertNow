@@ -1,0 +1,74 @@
+[
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\signuppage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\signuppage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\agencyin.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\agencyin.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\logintype.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\logintype.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\cdrrmopage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\cdrrmopage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\hospitalpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\hospitalpage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\pnppage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\pnppage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\agencyup.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\agencyup.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\starterpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\starterpage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\residentpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\residentpage.xml"
+    },
+    {
+        "merged": "com.example.alertnow.app-mergeReleaseResources-33:/layout/passres.xml",
+        "source": "com.example.alertnow.app-main-36:/layout/passres.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\residentup.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\residentup.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\signuptype.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\signuptype.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\bfppage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\bfppage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\healthpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\healthpage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\officialpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\officialpage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\passres.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\passres.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\loginpage.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\loginpage.xml"
+    },
+    {
+        "merged": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-mergeReleaseResources-33:\\layout\\activity_maps.xml",
+        "source": "C:\\Users\\Vince\\.gradle\\daemon\\8.10\\com.example.alertnow.app-main-36:\\layout\\activity_maps.xml"
+    }
+]

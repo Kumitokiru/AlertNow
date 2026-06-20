@@ -1,0 +1,103 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+
+android {
+    namespace "com.example.alertnow"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.alertnow"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("thekey.jks")
+            storePassword "vnc162223"
+            keyAlias "thekey"
+            keyPassword "vnc162223"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // ---- Rename the output APK inside the build folder ----
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            if (variant.buildType.name == 'release') {
+                outputFileName = "Alert Now.apk"
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    lint {
+        baseline file("lint-baseline.xml")
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.android.volley:volley:1.2.1'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation('io.socket:socket.io-client:2.1.0') {
+        exclude group: 'org.json', module: 'json'
+    }
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.core:core-ktx:1.13.0'
+    implementation 'androidx.fragment:fragment:1.8.4'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.work:work-runtime:2.9.0'
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+    implementation 'com.google.android.gms:play-services-maps:19.2.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+}
+
+/* --------------------------------------------------------------
+   COPY + OVERWRITE TASK
+   --------------------------------------------------------------
+   * Depends on assembleRelease
+   * Copies the renamed APK to the Desktop folder
+   * Overwrites any existing file (so you can reinstall directly)
+   -------------------------------------------------------------- */
+tasks.register('copyReleaseApk', Copy) {
+    dependsOn 'assembleRelease'
+
+    // Source: the renamed APK inside the normal output directory
+    from("$buildDir/outputs/apk/release/")
+    include "Alert Now.apk"
+
+    // Destination folder
+    into "C:/Users/Vince/Desktop/AlertNow"
+
+    // Force overwrite of the target file
+    eachFile { details ->
+        details.duplicatesStrategy = DuplicatesStrategy.INCLUDE   // default is WARN, we want silent overwrite
+    }
+    doLast {
+        def target = file("C:/Users/Vince/Desktop/AlertNow/Alert Now.apk")
+        println "APK ready for install (overwrites existing): ${target.absolutePath}"
+    }
+}

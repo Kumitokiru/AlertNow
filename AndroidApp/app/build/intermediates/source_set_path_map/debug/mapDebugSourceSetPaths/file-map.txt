@@ -1,0 +1,37 @@
+com.example.alertnow.app-jetified-appcompat-resources-1.6.1-0 C:\Users\Vince\.gradle\caches\8.10\transforms\09645d5aecc664912642fbc73495ac66\transformed\jetified-appcompat-resources-1.6.1\res
+com.example.alertnow.app-jetified-emoji2-1.2.0-1 C:\Users\Vince\.gradle\caches\8.10\transforms\10495eb7294e6fa97c6d6bf66f2e7802\transformed\jetified-emoji2-1.2.0\res
+com.example.alertnow.app-sqlite-framework-2.3.0-2 C:\Users\Vince\.gradle\caches\8.10\transforms\1788f371ff1f2f70c2ec4474ff919a97\transformed\sqlite-framework-2.3.0\res
+com.example.alertnow.app-jetified-annotation-experimental-1.4.0-3 C:\Users\Vince\.gradle\caches\8.10\transforms\1849f0497a65174c3f0772522636a9ac\transformed\jetified-annotation-experimental-1.4.0\res
+com.example.alertnow.app-lifecycle-runtime-2.6.2-4 C:\Users\Vince\.gradle\caches\8.10\transforms\1a94d54de50653c9c6e3daed8e3c58ff\transformed\lifecycle-runtime-2.6.2\res
+com.example.alertnow.app-work-runtime-2.9.0-5 C:\Users\Vince\.gradle\caches\8.10\transforms\31dc4622d7906d99c6b22f563348face\transformed\work-runtime-2.9.0\res
+com.example.alertnow.app-jetified-lifecycle-process-2.6.2-6 C:\Users\Vince\.gradle\caches\8.10\transforms\33085aac748b3d3676db1064b5ace811\transformed\jetified-lifecycle-process-2.6.2\res
+com.example.alertnow.app-jetified-room-ktx-2.5.0-7 C:\Users\Vince\.gradle\caches\8.10\transforms\3fae046be4231dcedff342092a2d884f\transformed\jetified-room-ktx-2.5.0\res
+com.example.alertnow.app-jetified-play-services-basement-18.4.0-8 C:\Users\Vince\.gradle\caches\8.10\transforms\428dcd900e001a700e97d7e4145b5b67\transformed\jetified-play-services-basement-18.4.0\res
+com.example.alertnow.app-constraintlayout-2.2.1-9 C:\Users\Vince\.gradle\caches\8.10\transforms\42f185763907175e1b0e812c9b0767d0\transformed\constraintlayout-2.2.1\res
+com.example.alertnow.app-sqlite-2.3.0-10 C:\Users\Vince\.gradle\caches\8.10\transforms\4515f81e4f9cafa5172a4ad65e1d72a8\transformed\sqlite-2.3.0\res
+com.example.alertnow.app-core-runtime-2.2.0-11 C:\Users\Vince\.gradle\caches\8.10\transforms\4a56ebc4811c1059cd9684011bd9d4ce\transformed\core-runtime-2.2.0\res
+com.example.alertnow.app-jetified-profileinstaller-1.4.0-12 C:\Users\Vince\.gradle\caches\8.10\transforms\543e35f96d2cf630fe9add92e6a37c08\transformed\jetified-profileinstaller-1.4.0\res
+com.example.alertnow.app-lifecycle-viewmodel-2.6.2-13 C:\Users\Vince\.gradle\caches\8.10\transforms\5a44a3f11ed4555ff839df4757701147\transformed\lifecycle-viewmodel-2.6.2\res
+com.example.alertnow.app-jetified-startup-runtime-1.1.1-14 C:\Users\Vince\.gradle\caches\8.10\transforms\5c447f2485978bd67dd56bb66d3f8523\transformed\jetified-startup-runtime-1.1.1\res
+com.example.alertnow.app-lifecycle-livedata-2.6.2-15 C:\Users\Vince\.gradle\caches\8.10\transforms\771e8ed7676d2ba72aabd07bf2f1cea7\transformed\lifecycle-livedata-2.6.2\res
+com.example.alertnow.app-jetified-activity-1.8.1-16 C:\Users\Vince\.gradle\caches\8.10\transforms\7842a949a017def79edbbbd142a13a37\transformed\jetified-activity-1.8.1\res
+com.example.alertnow.app-room-runtime-2.5.0-17 C:\Users\Vince\.gradle\caches\8.10\transforms\8a67c207e0a646181b306b48a2b5445e\transformed\room-runtime-2.5.0\res
+com.example.alertnow.app-jetified-glide-4.16.0-18 C:\Users\Vince\.gradle\caches\8.10\transforms\8ad397eeb73dc05f87248cbf50e43d9b\transformed\jetified-glide-4.16.0\res
+com.example.alertnow.app-lifecycle-livedata-core-2.6.2-19 C:\Users\Vince\.gradle\caches\8.10\transforms\9f846b083e99101d8a825b219a6b3734\transformed\lifecycle-livedata-core-2.6.2\res
+com.example.alertnow.app-jetified-play-services-base-18.5.0-20 C:\Users\Vince\.gradle\caches\8.10\transforms\be1a44b1ee75b4898d81e8fba429ca7a\transformed\jetified-play-services-base-18.5.0\res
+com.example.alertnow.app-core-1.13.0-21 C:\Users\Vince\.gradle\caches\8.10\transforms\c93d2c9f1bb9f5cbb32a17f4b4e15e26\transformed\core-1.13.0\res
+com.example.alertnow.app-jetified-savedstate-1.2.1-22 C:\Users\Vince\.gradle\caches\8.10\transforms\c9bddc48b3c5b608e60820effc820abc\transformed\jetified-savedstate-1.2.1\res
+com.example.alertnow.app-jetified-core-ktx-1.13.0-23 C:\Users\Vince\.gradle\caches\8.10\transforms\ceb3d92db3550e6820db20114f95382a\transformed\jetified-core-ktx-1.13.0\res
+com.example.alertnow.app-jetified-play-services-maps-19.2.0-24 C:\Users\Vince\.gradle\caches\8.10\transforms\d6cef23095108750648017d840d43ba8\transformed\jetified-play-services-maps-19.2.0\res
+com.example.alertnow.app-jetified-emoji2-views-helper-1.2.0-25 C:\Users\Vince\.gradle\caches\8.10\transforms\ea7a862d20ed2944bea9fcc759925ffc\transformed\jetified-emoji2-views-helper-1.2.0\res
+com.example.alertnow.app-jetified-lifecycle-viewmodel-savedstate-2.6.2-26 C:\Users\Vince\.gradle\caches\8.10\transforms\eed271c340cb865eb7701f08f9a0fa75\transformed\jetified-lifecycle-viewmodel-savedstate-2.6.2\res
+com.example.alertnow.app-fragment-1.8.4-27 C:\Users\Vince\.gradle\caches\8.10\transforms\f2db92fe35927dd7acb1dbf4d9c22186\transformed\fragment-1.8.4\res
+com.example.alertnow.app-appcompat-1.6.1-28 C:\Users\Vince\.gradle\caches\8.10\transforms\f3a2b8d8ed7bd95778fb4aef582353ab\transformed\appcompat-1.6.1\res
+com.example.alertnow.app-jetified-lifecycle-service-2.6.2-29 C:\Users\Vince\.gradle\caches\8.10\transforms\fc7d09e4d4a3961f8312109efe68d45b\transformed\jetified-lifecycle-service-2.6.2\res
+com.example.alertnow.app-pngs-30 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\build\generated\res\pngs\debug
+com.example.alertnow.app-resValues-31 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\build\generated\res\resValues\debug
+com.example.alertnow.app-packageDebugResources-32 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.alertnow.app-packageDebugResources-33 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.alertnow.app-debug-34 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.alertnow.app-debug-35 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\src\debug\res
+com.example.alertnow.app-main-36 C:\Users\Vince\Desktop\Vince\My Stuffs\All Works\4th Year Subjects\1st Sem\Thesis II\Alert Now\AndroidApp\app\src\main\res
